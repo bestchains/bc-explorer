@@ -1,0 +1,110 @@
+# Listener APIs
+
+### GET /networks
+Used to list all networks(`registered/deregistered`) in listener
+
+#### Example
+```
+curl --request GET \
+  --url http://localhost:9999/networks
+```
+
+#### Response
+```
+1. status_code 200
+[
+	{
+		"id": "network_blkexp4",
+		"type": "Fabric",
+		"platform": "bestchains",
+		"status": "Registered"
+	}
+]
+```
+
+
+### POST /network/register
+Used to register a new network
+
+#### Example
+```
+curl --request POST \
+  --url http://localhost:9999/network/register \
+  --header 'content-type: application/json' \
+  --data '{
+    "id": "network_blkexp4",
+    "platform": "bestchains",
+    "fabProfile": {
+        "organization": "bjwswang",
+        "user": {
+            "name": "bjwswang",
+            "key": {
+                "pem": "-----BEGIN PRIVATE KEY-----\nMIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQgAxn/8bmHcFOvqrX7\n1m5t8PDOcr9/RhpWjNtNIWYTybmhRANCAAQXnHaLa/vjV5OG9ORl+lT9DKR15IdQ\nV5cjvN4k5+U07k9PC7fIOjknzxfuSoHjhstbQU73UEQ+5dg4YsR7SZ7J\n-----END PRIVATE KEY-----\n"
+            },
+            "cert": {
+                "pem": "-----BEGIN CERTIFICATE-----\nMIIDEzCCArmgAwIBAgIUJ+ygoKTmih9tqxpSBtHkJskharYwCgYIKoZIzj0EAwIw\nYzELMAkGA1UEBhMCVVMxFzAVBgNVBAgTDk5vcnRoIENhcm9saW5hMRQwEgYDVQQK\nEwtIeXBlcmxlZGdlcjEPMA0GA1UECxMGRmFicmljMRQwEgYDVQQDEwtiandzd2Fu\nZy1jYTAeFw0yMzAzMTQwNTI1MDBaFw0yNDAzMTMwNTM1MDBaMCMxDjAMBgNVBAsT\nBWFkbWluMREwDwYDVQQDEwhiandzd2FuZzBZMBMGByqGSM49AgEGCCqGSM49AwEH\nA0IABBecdotr++NXk4b05GX6VP0MpHXkh1BXlyO83iTn5TTuT08Lt8g6OSfPF+5K\ngeOGy1tBTvdQRD7l2DhixHtJnsmjggGJMIIBhTAOBgNVHQ8BAf8EBAMCB4AwDAYD\nVR0TAQH/BAIwADAdBgNVHQ4EFgQUpy+p4c+U3G8rJZUymkhGibWUy1kwHwYDVR0j\nBBgwFoAUGcLvXMlWCpjV2/21e7srT99AuekwLgYDVR0RBCcwJYIjY29udHJvbGxl\nci1tYW5hZ2VyLTVkOGQ0N2M2YzUtcW5iNXIwgfQGCCoDBAUGBwgBBIHneyJhdHRy\ncyI6eyJoZi5BZmZpbGlhdGlvbiI6IiIsImhmLkVucm9sbG1lbnRJRCI6ImJqd3N3\nYW5nIiwiaGYuR2VuQ1JMIjoidHJ1ZSIsImhmLkludGVybWVkaWF0ZUNBIjoidHJ1\nZSIsImhmLlJlZ2lzdHJhci5Sb2xlcyI6IioiLCJoZi5SZWdpc3RyYXJEZWxlZ2F0\nZVJvbGVzIjoiKiIsImhmLlJldm9rZXIiOiIqIiwiaGYuVHlwZSI6ImFkbWluIiwi\naGYuaGYuUmVnaXN0cmFyLkF0dHJpYnV0ZXMiOiIqIn19MAoGCCqGSM49BAMCA0gA\nMEUCIQDc/q066gcTJx4x++Km0Mak8gOerVyuJURNHq86f3ahqwIgaLZl07mgJfVW\niesog6epMg9bsBV5uruaRocPvBZBGt4=\n-----END CERTIFICATE-----\n"
+            }
+        },
+        "endpoint": {
+            "url": "grpcs://bjwswang-bjwswang-peer-du283-peer.172.22.96.209.nip.io:443",
+            "tlsCACerts": {
+                "pem": "-----BEGIN CERTIFICATE-----\nMIIDQjCCAumgAwIBAgIURlCfmMb+eNbQ95H9dM2VSJB+ND0wCgYIKoZIzj0EAwIw\nZjELMAkGA1UEBhMCVVMxFzAVBgNVBAgTDk5vcnRoIENhcm9saW5hMRQwEgYDVQQK\nEwtIeXBlcmxlZGdlcjEPMA0GA1UECxMGRmFicmljMRcwFQYDVQQDEw5iandzd2Fu\nZy10bHNjYTAeFw0yMzAzMTQwNTI1MDBaFw0zODAzMTAwNTI1MDBaMC0xDTALBgNV\nBAsTBHBlZXIxHDAaBgNVBAMTE2Jqd3N3YW5nLXBlZXItZHUyODMwWTATBgcqhkjO\nPQIBBggqhkjOPQMBBwNCAAT7F9JAgeHdqvZRRaqYSl2E332RlzSicyIT+hxJoxf5\n6Qlg4dh6ecTHQcYPtR37N7Pp6VkZl0la8l0NsCf5WvmAo4IBrDCCAagwDgYDVR0P\nAQH/BAQDAgOoMB0GA1UdJQQWMBQGCCsGAQUFBwMBBggrBgEFBQcDAjAMBgNVHRMB\nAf8EAjAAMB0GA1UdDgQWBBR7zI3QTeFFLYcnUN1dTwPeX34VljAfBgNVHSMEGDAW\ngBRJ9CldAy8QcMX5KkLWE6djU9n9PjCBwgYDVR0RBIG6MIG3gjZiandzd2FuZy1i\nandzd2FuZy1wZWVyLWR1MjgzLXBlZXIuMTcyLjIyLjk2LjIwOS5uaXAuaW+CPGJq\nd3N3YW5nLWJqd3N3YW5nLXBlZXItZHUyODMtb3BlcmF0aW9ucy4xNzIuMjIuOTYu\nMjA5Lm5pcC5pb4I5Ymp3c3dhbmctYmp3c3dhbmctcGVlci1kdTI4My1ncnBjd2Vi\nLjE3Mi4yMi45Ni4yMDkubmlwLmlvhwR/AAABMGQGCCoDBAUGBwgBBFh7ImF0dHJz\nIjp7ImhmLkFmZmlsaWF0aW9uIjoiIiwiaGYuRW5yb2xsbWVudElEIjoiYmp3c3dh\nbmctcGVlci1kdTI4MyIsImhmLlR5cGUiOiJwZWVyIn19MAoGCCqGSM49BAMCA0cA\nMEQCIHZsT4WeDZS6usIxvQAgB7C75RupisEC6RD3WYKpWxg3AiAsho3Pshia6NiP\n8W239jFXgJGzXEBXD+vWv1khFqkRGg==\n-----END CERTIFICATE-----\n"
+            }
+        }
+    }
+}'
+```
+
+For request body, see [here](../test/sample_fabric_network.json)
+
+
+#### Response
+
+```
+1. status_code 200  
+
+2. status_code 500
+
+```
+
+### POST /network/deregister/:nid
+
+Used to `deregister` network. 
+
+**Note that previous stored block/tx data of the `deregistered network` won't be deleted**
+
+#### Example
+
+```
+curl --request POST \
+  --url http://localhost:9999/network/deregister/network_blkexp4 \
+  --header 'content-type: application/json'
+```
+
+
+#### Response
+
+```
+1. status_code 200  
+
+2. status_code 500
+```
+
+### DELETE /network/:nid
+
+Used to delete network along with all block/tx data
+
+#### Example
+
+```
+curl --request DELETE \
+  --url http://localhost:9999/network/network_blkexp4
+```
+
+#### Response
+
+```
+1. status_code 200  
+
+2. status_code 500
+```
