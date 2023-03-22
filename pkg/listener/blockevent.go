@@ -70,6 +70,7 @@ func newFabEventListener(pctx context.Context, errq errorsq.Errorsq, injector In
 	listener := &fabEventListener{
 		ctx:        ctx,
 		cancel:     cancel,
+		errq:       errq,
 		nid:        net.ID,
 		platform:   string(net.Platform),
 		injector:   injector,
