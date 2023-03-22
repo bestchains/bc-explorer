@@ -23,14 +23,13 @@ import (
 	"encoding/hex"
 	"math/big"
 
+	"github.com/bestchains/bc-explorer/pkg/internal/hyperledger/fabric/protoutil"
+	"github.com/bestchains/bc-explorer/pkg/network"
 	"github.com/hyperledger/fabric-gateway/pkg/client"
 	"github.com/hyperledger/fabric-protos-go-apiv2/common"
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/proto"
 	"k8s.io/klog/v2"
-
-	"github.com/bestchains/bc-explorer/pkg/internal/hyperledger/fabric/protoutil"
-	"github.com/bestchains/bc-explorer/pkg/network"
 
 	"github.com/bestchains/bc-explorer/pkg/errorsq"
 	"github.com/bestchains/bc-explorer/pkg/models"
