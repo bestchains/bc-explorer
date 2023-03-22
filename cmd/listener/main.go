@@ -89,6 +89,7 @@ func run() error {
 		CaseSensitive: true,
 		StrictRouting: true,
 		Immutable:     true,
+		AppName:       "bc-explorer-listener",
 	})
 	app.Use(cors.New(cors.ConfigDefault))
 	app.Use(logger.New(logger.Config{
