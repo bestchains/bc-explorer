@@ -67,6 +67,7 @@ func NewFabricClient(n *Network) (*FabricClient, error) {
 	var err error
 
 	if n.FabProfile == nil {
+		klog.Error(errMissingFabNetProfile)
 		return nil, errMissingFabNetProfile
 	}
 
@@ -79,21 +80,24 @@ func NewFabricClient(n *Network) (*FabricClient, error) {
 	}
 	channel := idc[len(idc)-1]
 
-	klog.Infof("initialize a fabric client conn for network: %s", n.ID)
+	klog.V(5).Infof("initialize a fabric client conn for network: %s", n.ID)
 	clientConn, err := newFabClientConn(profile, channel)
 	if err != nil {
+		klog.Error(err)
 		return nil, err
 	}
 
-	klog.Infof("initialize a fabric identity for network: %s", n.ID)
+	klog.V(5).Infof("initialize a fabric identity for network: %s", n.ID)
 	id, sign, err := profile.User.ToIdentity(profile.Organization)
 	if err != nil {
+		klog.Error(err)
 		return nil, err
 	}
 
-	klog.Infof("connect to network: %s", n.ID)
+	klog.V(5).Infof("connect to network: %s", n.ID)
 	gateway, err := client.Connect(id, client.WithSign(sign), client.WithClientConnection(clientConn))
 	if err != nil {
+		klog.Error(err)
 		return nil, err
 	}
 

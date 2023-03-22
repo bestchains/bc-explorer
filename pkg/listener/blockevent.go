@@ -29,11 +29,11 @@ import (
 	"google.golang.org/protobuf/proto"
 	"k8s.io/klog/v2"
 
-	"github.com/bjwswang/bc-explorer/pkg/internal/hyperledger/fabric/protoutil"
-	"github.com/bjwswang/bc-explorer/pkg/network"
+	"github.com/bestchains/bc-explorer/pkg/internal/hyperledger/fabric/protoutil"
+	"github.com/bestchains/bc-explorer/pkg/network"
 
-	"github.com/bjwswang/bc-explorer/pkg/errorsq"
-	"github.com/bjwswang/bc-explorer/pkg/models"
+	"github.com/bestchains/bc-explorer/pkg/errorsq"
+	"github.com/bestchains/bc-explorer/pkg/models"
 )
 
 var (
@@ -108,7 +108,7 @@ func (listener *fabEventListener) Events() {
 		if !ok {
 			return
 		}
-		klog.Infof("Received new block %d for network %s", blk.Header.Number+1, listener.nid)
+		klog.V(5).Infof("Received new block %d for network %s", blk.Header.Number+1, listener.nid)
 		if err := listener.fabBlkHandler(blk); err != nil {
 			listener.errq.Send(err)
 		}

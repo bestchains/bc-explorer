@@ -20,8 +20,8 @@ import (
 	"context"
 	"flag"
 
-	"github.com/bjwswang/bc-explorer/pkg/errorsq"
-	bclistener "github.com/bjwswang/bc-explorer/pkg/listener"
+	"github.com/bestchains/bc-explorer/pkg/errorsq"
+	bclistener "github.com/bestchains/bc-explorer/pkg/listener"
 	"github.com/go-pg/pg/v10"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
@@ -36,6 +36,7 @@ var (
 )
 
 func main() {
+	klog.InitFlags(nil)
 	flag.Parse()
 
 	if err := run(); err != nil {
@@ -64,6 +65,10 @@ func run() error {
 		}
 		db := pg.Connect(opts)
 		defer db.Close()
+		if err := db.Ping(pctx); err != nil {
+			panic(err)
+		}
+
 		itr, err = bclistener.NewPQInjector(db)
 		if err != nil {
 			return err

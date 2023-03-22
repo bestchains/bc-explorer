@@ -5,7 +5,7 @@ Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
 
-	http://www.apache.org/licenses/LICENSE-2.0
+    http://www.apache.org/licenses/LICENSE-2.0
 
 Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,13 +13,15 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
+
 package main
 
 import (
 	"context"
 	"flag"
 
-	"github.com/bjwswang/bc-explorer/pkg/errorsq"
+	"github.com/bestchains/bc-explorer/pkg/errorsq"
+	"github.com/bestchains/bc-explorer/pkg/viewer"
 	"github.com/go-pg/pg/v10"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
@@ -34,6 +36,7 @@ var (
 )
 
 func main() {
+	klog.InitFlags(nil)
 	flag.Parse()
 
 	if err := run(); err != nil {
@@ -51,7 +54,8 @@ func run() error {
 
 	klog.Infoln("Starting a blockchain explorer viewer server")
 
-	klog.Infof("init db")
+	klog.Infoln("init db")
+	block := viewer.NewBlockLoggerHandler()
 	if *db == "pg" {
 		klog.Infoln("Using postgreSQL")
 		opts, err := pg.ParseURL(*dsn)
@@ -60,6 +64,11 @@ func run() error {
 		}
 		pgDB := pg.Connect(opts)
 		defer pgDB.Close()
+		if err := pgDB.Ping(pctx); err != nil {
+			panic(err)
+		}
+
+		block = viewer.NewBlockHandler(pgDB)
 	}
 	klog.Infoln("Creating http server")
 	app := fiber.New(fiber.Config{
@@ -68,6 +77,8 @@ func run() error {
 		Immutable:     true,
 		AppName:       "bc-explorer-viewer",
 	})
+
+	viewerHandler := viewer.NewViewHandler(block)
 	app.Use(cors.New(cors.ConfigDefault))
 	app.Use(logger.New(logger.Config{
 		Format: "[${ip}]:${port} ${status} - ${method} ${path}\n",
@@ -75,6 +86,8 @@ func run() error {
 
 	// TODO: register handlers
 	// app.Get("/blocks", handler.List)
+	app.Get("/networks/:network/blocks", viewerHandler.ListBlocks)
+	app.Get("/networks/:network/blocks/:blockHash", viewerHandler.GetBlock)
 
 	if err := app.Listen(*addr); err != nil {
 		errq.Send(err)

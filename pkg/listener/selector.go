@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/bjwswang/bc-explorer/pkg/models"
+	"github.com/bestchains/bc-explorer/pkg/models"
 	"github.com/go-pg/pg/v10"
 )
 
