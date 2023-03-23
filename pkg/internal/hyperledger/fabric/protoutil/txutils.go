@@ -97,9 +97,20 @@ func GetTransactionFromEnvelope(txEnvelopBytes []byte) (*models.Transaction, err
 		tx.Payload = raw
 	case int32(common.HeaderType_ENDORSER_TRANSACTION):
 		tx.Type = models.EndorserTransaction
-		action, _ := GetActionFromPayload(txPayload)
+
+		invocationSpec, action, err := GetTxDetailsFromPayload(txPayload)
+		if err != nil {
+			return nil, err
+		}
 
 		tx.ChaincodeID = action.ChaincodeId.Name + "_" + action.ChaincodeId.Version
+		if len(invocationSpec.ChaincodeSpec.Input.Args) > 0 {
+			tx.Method = string(invocationSpec.ChaincodeSpec.Input.Args[0])
+			for _, arg := range invocationSpec.ChaincodeSpec.Input.Args[1:] {
+				tx.Args = append(tx.Args, string(arg))
+			}
+		}
+
 		rwset, err := UnmarshalRWSet(action.GetResults())
 		if err != nil {
 			return nil, err
@@ -113,33 +124,23 @@ func GetTransactionFromEnvelope(txEnvelopBytes []byte) (*models.Transaction, err
 			return nil, err
 		}
 		tx.Payload = raw
-
-		// TODO: extract Chaincode Input
 	default:
 	}
 
 	return tx, nil
 }
 
-func GetActionFromPayload(payload *common.Payload) (*peer.ChaincodeAction, error) {
+// GetPayloads gets the underlying payload objects in a TransactionAction
+func GetTxDetailsFromPayload(payload *common.Payload) (*peer.ChaincodeInvocationSpec, *peer.ChaincodeAction, error) {
 	payloadTx, err := UnmarshalTransaction(payload.Data)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	if len(payloadTx.Actions) == 0 {
-		return nil, errors.New("at least one TransactionAction required")
+		return nil, nil, errors.New("at least one TransactionAction required")
 	}
 
-	_, respPayload, err := GetPayloads(payloadTx.Actions[0])
-	return respPayload, err
-
-}
-
-// GetPayloads gets the underlying payload objects in a TransactionAction
-func GetPayloads(txActions *peer.TransactionAction) (*peer.ChaincodeActionPayload, *peer.ChaincodeAction, error) {
-	// TODO: pass in the tx type (in what follows we're assuming the
-	// type is ENDORSER_TRANSACTION)
-	ccPayload, err := UnmarshalChaincodeActionPayload(txActions.Payload)
+	ccPayload, err := UnmarshalChaincodeActionPayload(payloadTx.Actions[0].Payload)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -147,6 +148,16 @@ func GetPayloads(txActions *peer.TransactionAction) (*peer.ChaincodeActionPayloa
 	if ccPayload.Action == nil || ccPayload.Action.ProposalResponsePayload == nil {
 		return nil, nil, errors.New("no payload in ChaincodeActionPayload")
 	}
+
+	ccProposalPayload, err := UnmarshalChaincodeProposalPayload(ccPayload.ChaincodeProposalPayload)
+	if err != nil {
+		return nil, nil, err
+	}
+	invocationSpec, err := UnmarshalChaincodeInvocationSpec(ccProposalPayload.Input)
+	if err != nil {
+		return nil, nil, err
+	}
+
 	pRespPayload, err := UnmarshalProposalResponsePayload(ccPayload.Action.ProposalResponsePayload)
 	if err != nil {
 		return nil, nil, err
@@ -158,7 +169,7 @@ func GetPayloads(txActions *peer.TransactionAction) (*peer.ChaincodeActionPayloa
 
 	respPayload, err := UnmarshalChaincodeAction(pRespPayload.Extension)
 	if err != nil {
-		return ccPayload, nil, err
+		return nil, nil, err
 	}
-	return ccPayload, respPayload, nil
+	return invocationSpec, respPayload, nil
 }
