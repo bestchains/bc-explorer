@@ -1,7 +1,8 @@
 {
-    "id": "blkexp_blkexp6",
+    "id": "blkexp",
     "platform": "bestchains",
     "fabProfile": {
+        "channel": "blkexp6",
         "organization": "bjwswang",
         "user": {
             "name": "bjwswang",

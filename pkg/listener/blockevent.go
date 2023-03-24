@@ -52,8 +52,7 @@ type fabEventListener struct {
 
 	errq errorsq.Errorsq
 
-	nid      string
-	platform string
+	nid string
 
 	startBlock uint64
 
@@ -72,7 +71,6 @@ func newFabEventListener(pctx context.Context, errq errorsq.Errorsq, injector In
 		cancel:     cancel,
 		errq:       errq,
 		nid:        net.ID,
-		platform:   string(net.Platform),
 		injector:   injector,
 		startBlock: startBlock,
 	}

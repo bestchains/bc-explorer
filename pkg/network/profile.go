@@ -36,6 +36,7 @@ var (
 )
 
 type FabProfile struct {
+	Channel      string       `yaml:"channel" json:"channel" validate:"required"`
 	Organization string       `yaml:"organization" json:"organization" validate:"required"`
 	User         User         `yaml:"user" json:"user" validate:"required"`
 	Enpoint      NodeEndpoint `yaml:"endpoint" json:"endpoint" validate:"required"`
@@ -60,7 +61,7 @@ type TLSCACerts struct {
 	Pem string `yaml:"pem,omitempty" json:"pem,omitempty"`
 }
 
-func newFabClientConn(p *FabProfile, channel string) (*grpc.ClientConn, error) {
+func newFabClientConn(p *FabProfile) (*grpc.ClientConn, error) {
 	u, err := url.Parse(p.Enpoint.URL)
 	if err != nil {
 		return nil, errors.Wrap(errInvalidFabNetEndpoint, err.Error())

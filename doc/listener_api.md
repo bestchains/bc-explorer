@@ -14,7 +14,7 @@ curl --request GET \
 1. status_code 200
 [
 	{
-		"id": "network_blkexp4",
+		"id": "blkexp_blkexp6",
 		"type": "Fabric",
 		"platform": "bestchains",
 		"status": "Registered"
@@ -32,9 +32,10 @@ curl --request POST \
   --url http://localhost:9999/network/register \
   --header 'content-type: application/json' \
   --data '{
-    "id": "network_blkexp4",
+    "id": "blkexp",
     "platform": "bestchains",
     "fabProfile": {
+        "channel": "blkexp6",
         "organization": "bjwswang",
         "user": {
             "name": "bjwswang",
@@ -77,7 +78,7 @@ Used to `deregister` network.
 
 ```
 curl --request POST \
-  --url http://localhost:9999/network/deregister/network_blkexp4 \
+  --url http://localhost:9999/network/deregister/blkexp_blkexp6 \
   --header 'content-type: application/json'
 ```
 
@@ -98,7 +99,7 @@ Used to delete network along with all block/tx data
 
 ```
 curl --request DELETE \
-  --url http://localhost:9999/network/network_blkexp4
+  --url http://localhost:9999/network/blkexp_blkexp6
 ```
 
 #### Response
