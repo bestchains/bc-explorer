@@ -31,7 +31,7 @@ import (
 
 var (
 	injector = flag.String("injector", "pg", "used to initialize injector")
-	dsn      = flag.String("dsn", "postgres://bestchains:Passw0rd!@127.0.0.1:5432/bc-explorer?sslmode=disable", "database conneciton string")
+	dsn      = flag.String("dsn", "postgres://bestchains:Passw0rd!@127.0.0.1:5432/bc-explorer?sslmode=disable", "database connection string")
 	addr     = flag.String("addr", ":9999", "used to listen and serve http requests")
 )
 

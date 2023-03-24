@@ -107,7 +107,6 @@ func (fabclient *FabricClient) Channel(channel string) *client.Network {
 		return fabclient.gw.GetNetwork(channel)
 	}
 	return fabclient.primaryChannel
-
 }
 
 func (fabclient *FabricClient) Close() {

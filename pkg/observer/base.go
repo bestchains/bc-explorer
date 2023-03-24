@@ -20,35 +20,19 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/bestchains/bc-explorer/pkg/network"
-
 	"github.com/IBM-Blockchain/fabric-operator/pkg/generated/informers/externalversions"
+	"github.com/bestchains/bc-explorer/pkg/network"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
 
 	"github.com/IBM-Blockchain/fabric-operator/pkg/generated/clientset/versioned"
 
-	"github.com/pkg/errors"
 	"k8s.io/client-go/rest"
-	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/klog/v2"
 )
 
-func Run(ctx context.Context, host, kubeConfigPath string) (err error) {
+func Run(ctx context.Context, config *rest.Config, host string) (err error) {
 	klog.V(5).Infof("observer start...")
-	var config *rest.Config
-	if kubeConfigPath == "" {
-		config, err = rest.InClusterConfig()
-		if err != nil {
-			return errors.Wrap(err, "create in-cluster client configuration error")
-		}
-	} else {
-		config, err = clientcmd.BuildConfigFromFlags("", kubeConfigPath)
-		if err != nil {
-			return errors.Wrap(err, "create out-of-cluster client configuration error")
-		}
-	}
-
 	vclient, err := versioned.NewForConfig(config)
 	if err != nil {
 		return err
