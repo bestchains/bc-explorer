@@ -17,7 +17,7 @@ limitations under the License.
 package listener
 
 import (
-	"github.com/bjwswang/bc-explorer/pkg/models"
+	"github.com/bestchains/bc-explorer/pkg/models"
 	"github.com/go-pg/pg/v10"
 	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
@@ -85,7 +85,7 @@ type pqInjector struct {
 
 func (pqitr *pqInjector) InjectNetworks(nets ...*models.Network) error {
 	for _, net := range nets {
-		klog.Infof("PQInjector: inject network %s", net.ID)
+		klog.V(5).Infof("PQInjector: inject network %s", net.ID)
 		_, err := pqitr.db.Model(net).OnConflict("(id) DO UPDATE").Set("status = EXCLUDED.status").Insert()
 		if err != nil {
 			return err
@@ -119,7 +119,7 @@ func (pqitr *pqInjector) DeleteNetwork(nid string) error {
 
 func (pqitr *pqInjector) InjectBlocks(blks ...*models.Block) error {
 	for _, blk := range blks {
-		klog.Infof("PQInjector: inject block %d %s", blk.BlockNumber, blk.BlockHash)
+		klog.V(5).Infof("PQInjector: inject block %d %s", blk.BlockNumber, blk.BlockHash)
 		_, err := pqitr.db.Model(blk).Insert()
 		if err != nil {
 			return err
@@ -130,7 +130,7 @@ func (pqitr *pqInjector) InjectBlocks(blks ...*models.Block) error {
 
 func (pqitr *pqInjector) InjectTransactions(txs ...*models.Transaction) error {
 	for _, tx := range txs {
-		klog.Infof("PQInjector: inject transaction %s", tx.ID)
+		klog.V(5).Infof("PQInjector: inject transaction %s", tx.ID)
 		_, err := pqitr.db.Model(tx).Insert()
 		if err != nil {
 			return err

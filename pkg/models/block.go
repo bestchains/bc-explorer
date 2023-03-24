@@ -16,6 +16,8 @@ limitations under the License.
 
 package models
 
+const BlockTableName = "blocks"
+
 type Block struct {
 	BlockHash         string `pg:"blockHash,pk"`
 	Network           string `pg:"network"`

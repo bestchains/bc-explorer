@@ -21,9 +21,9 @@ import (
 	"encoding/json"
 	"sync"
 
-	"github.com/bjwswang/bc-explorer/pkg/errorsq"
-	"github.com/bjwswang/bc-explorer/pkg/models"
-	"github.com/bjwswang/bc-explorer/pkg/network"
+	"github.com/bestchains/bc-explorer/pkg/errorsq"
+	"github.com/bestchains/bc-explorer/pkg/models"
+	"github.com/bestchains/bc-explorer/pkg/network"
 	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
 )
@@ -75,7 +75,7 @@ func NewListener(ctx context.Context, errq errorsq.Errorsq, injector Injector, s
 	klog.Infof("Pre-register %d networks", len(nets))
 	for _, net := range nets {
 		if net.Status != models.Registered {
-			klog.Infof("Skip pre-register network %s which at status %s", net.ID, net.Status)
+			klog.V(5).Infof("Skip pre-register network %s which at status %s", net.ID, net.Status)
 			continue
 		}
 		err = l.preRegister(&net)

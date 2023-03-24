@@ -1,4 +1,4 @@
-module github.com/bjwswang/bc-explorer
+module github.com/bestchains/bc-explorer
 
 go 1.18
 

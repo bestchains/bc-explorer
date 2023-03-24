@@ -21,7 +21,7 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/bjwswang/bc-explorer/pkg/network"
+	"github.com/bestchains/bc-explorer/pkg/network"
 	"github.com/gofiber/fiber/v2"
 )
 

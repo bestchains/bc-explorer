@@ -5,7 +5,7 @@ Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
 
-	http://www.apache.org/licenses/LICENSE-2.0
+    http://www.apache.org/licenses/LICENSE-2.0
 
 Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,10 +13,77 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
+
 package viewer
 
-type handler struct{}
+import (
+	"fmt"
+	"net/http"
 
-func NewViewHandler() handler {
-	return handler{}
+	"github.com/go-pg/pg/v10"
+	"github.com/gofiber/fiber/v2"
+	"k8s.io/klog/v2"
+)
+
+type handler struct {
+	block Block
+}
+
+func NewViewHandler(b Block) handler {
+	return handler{block: b}
+}
+
+func (h *handler) ListBlocks(ctx *fiber.Ctx) error {
+	klog.Infof("viewer ListBlocks")
+
+	arg := BlockArg{
+		From:        ctx.QueryInt("from", 0),
+		Size:        ctx.QueryInt("size", 10),
+		Network:     ctx.Params("network"),
+		StartTime:   int64(ctx.QueryInt("startTime", 0)),
+		EndTime:     int64(ctx.QueryInt("endTime", 0)),
+		BlockNumber: uint64(ctx.QueryInt("blockNumber", 0)),
+		BlockHash:   ctx.Query("blockHash"),
+	}
+	klog.V(5).Infof(" with ctx  %+v arg: %+v\n", *ctx, arg)
+	result, count, err := h.block.List(arg)
+
+	if err != nil {
+		klog.Error(fmt.Sprintf("List Blocks error %s", err))
+		ctx.Status(http.StatusInternalServerError)
+		return ctx.JSON(map[string]string{"msg": err.Error()})
+	}
+
+	data := map[string]interface{}{
+		"data":  result,
+		"count": count,
+	}
+	return ctx.JSON(data)
+}
+
+func (h *handler) GetBlock(ctx *fiber.Ctx) error {
+	klog.Info("viewer GetBlock")
+	blockHash := ctx.Params("blockHash")
+	network := ctx.Params("network")
+	if blockHash == "" {
+		ctx.Status(http.StatusBadRequest)
+		return ctx.JSON(map[string]string{"msg": "blockHash can't be empty"})
+	}
+	arg := BlockArg{BlockHash: blockHash, Network: network}
+	klog.V(5).Infof(" with ctx %+v, arg: %+v\n", *ctx, arg)
+
+	result, err := h.block.Get(arg)
+
+	if err != nil {
+		klog.Error(fmt.Sprintf("get block error %s", err))
+		msg := err.Error()
+		ctx.Status(http.StatusInternalServerError)
+		if pg.ErrNoRows == err {
+			ctx.Status(http.StatusNotFound)
+			msg = fmt.Sprintf("not found block %s", blockHash)
+		}
+		return ctx.JSON(map[string]string{"msg": msg})
+	}
+
+	return ctx.JSON(result)
 }

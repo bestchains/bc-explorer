@@ -69,7 +69,7 @@ func newFabClientConn(p *FabProfile, channel string) (*grpc.ClientConn, error) {
 	// initialize transport credentials
 	transportCreds := insecure.NewCredentials()
 	if u.Scheme == "grpcs" {
-		klog.Infof("ssl enabled in endpoint: %s", u.Host)
+		klog.V(5).Infof("ssl enabled in endpoint: %s", u.Host)
 		cpb, _ := pem.Decode([]byte(p.Enpoint.TLSCACerts.Pem))
 		cert, err := x509.ParseCertificate(cpb.Bytes)
 		if err != nil {

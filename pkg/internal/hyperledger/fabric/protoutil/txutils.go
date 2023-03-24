@@ -25,8 +25,8 @@ package protoutil
 import (
 	"encoding/json"
 
-	"github.com/bjwswang/bc-explorer/pkg/internal/hyperledger/fabric/rwsetutil"
-	"github.com/bjwswang/bc-explorer/pkg/models"
+	"github.com/bestchains/bc-explorer/pkg/internal/hyperledger/fabric/rwsetutil"
+	"github.com/bestchains/bc-explorer/pkg/models"
 	"github.com/hyperledger/fabric-protos-go-apiv2/common"
 	"github.com/hyperledger/fabric-protos-go-apiv2/peer"
 	"github.com/pkg/errors"
