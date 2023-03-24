@@ -24,6 +24,13 @@ bc-explorer is a block explorer for **bestchains** which has three components :
 - [Postgresql](https://www.postgresql.org/download/)
 
 
+### Build Image
+
+```bash
+# output: hyperledgerk8s/bc-explorer:v0.2
+WHAT=bc-explorer GOOS=linux GOARCH=amd64 make image
+```
+
 ### Quick start
 
 #### Listener

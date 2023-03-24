@@ -1,0 +1,34 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: bc-explorer
+  namespace: baas-system
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: bc-explorer
+  template:
+    metadata:
+      labels:
+        app: bc-explorer
+    spec:
+      containers:
+      - name: viewer
+        image: hyperledgerk8s/bc-explorer:v0.2
+        command:
+        - viewer
+        args:
+        - -v=5
+        - -dsn=postgres://username:password@postgresql.172.22.96.209.nip.io/bc-explorer?sslmode=disable
+        ports:
+        - containerPort: 9998
+      - name: listener
+        image:  hyperledgerk8s/bc-explorer:v0.2
+        command:
+        - listener
+        args:
+        - -v=4
+        - -dsn=postgres://username:password@postgresql.172.22.96.209.nip.io/bc-explorer?sslmode=disable
+        ports:
+        - containerPort: 9999
