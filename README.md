@@ -44,7 +44,7 @@ Usage of ./bin/listener:
   -alsologtostderr
         log to standard error as well as files (no effect when -logtostderr=true)
   -dsn string
-        database conneciton string (default "postgres://bestchains:Passw0rd!@127.0.0.1:5432/bc-explorer?sslmode=disable")
+        database connection string (default "postgres://bestchains:Passw0rd!@127.0.0.1:5432/bc-explorer?sslmode=disable")
   -injector string
         used to initialize injector (default "pg")
   -log_backtrace_at value
@@ -97,7 +97,7 @@ Usage of ./bin/viewer:
   -db string
         which database to use, default is pg(postgresql) (default "pg")
   -dsn string
-        database conneciton string (default "postgres://bestchains:Passw0rd!@127.0.0.1:5432/bc-explorer?sslmode=disable")
+        database connection string (default "postgres://bestchains:Passw0rd!@127.0.0.1:5432/bc-explorer?sslmode=disable")
   -log_backtrace_at value
         when logging hits line file:N, emit a stack trace
   -log_dir string

@@ -37,7 +37,7 @@ import (
 )
 
 var (
-	WrongTypeChannelErr = errors.New("wrong type of channel")
+	ErrWrongTypeChannel = errors.New("wrong type of channel")
 )
 
 type Watcher struct {
@@ -72,7 +72,7 @@ func (w *Watcher) ChannelCreate(obj interface{}) {
 	}
 	channel, ok := obj.(*v1beta1.Channel)
 	if !ok {
-		klog.ErrorS(WrongTypeChannelErr, "get wrong type of network", "obj", name)
+		klog.ErrorS(ErrWrongTypeChannel, "get wrong type of network", "obj", name)
 		return
 	}
 	if err := w.GetProfile(context.TODO(), channel); err != nil {
@@ -100,7 +100,7 @@ func (w *Watcher) ChannelDelete(obj interface{}) {
 	}
 	_, ok := obj.(*v1beta1.Channel)
 	if !ok {
-		klog.ErrorS(WrongTypeChannelErr, "get wrong type of channel", "obj", name)
+		klog.ErrorS(ErrWrongTypeChannel, "get wrong type of channel", "obj", name)
 		return
 	}
 	w.DeleteNames <- name

@@ -21,19 +21,25 @@ import (
 	"flag"
 
 	"github.com/bestchains/bc-explorer/pkg/observer"
-
 	"k8s.io/apiserver/pkg/server"
 	"k8s.io/klog/v2"
+	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client/config"
+	logf "sigs.k8s.io/controller-runtime/pkg/log"
+	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 )
 
 var (
-	kubeconfig = flag.String("kubeconfig", "", "the path of kube config file")
-	host       = flag.String("host", "", "the host of listener")
+	host = flag.String("host", "localhost:9999", "the host of listener")
 )
 
 func main() {
-	klog.InitFlags(nil)
+	logf.SetLogger(zap.New(zap.UseDevMode(true)))
+	ctrl.SetLogger(zap.New(zap.UseDevMode(true)))
 	flag.Parse()
+	flag.VisitAll(func(flag *flag.Flag) {
+		klog.V(1).Infof("FLAG: --%s=%q", flag.Name, flag.Value)
+	})
 
 	if err := run(); err != nil {
 		klog.Error(err)
@@ -48,7 +54,8 @@ func run() error {
 		<-stopCh
 		cancel()
 	}()
-	if err := observer.Run(ctx, *host, *kubeconfig); err != nil {
+	restConfig := config.GetConfigOrDie()
+	if err := observer.Run(ctx, restConfig, *host); err != nil {
 		return err
 	}
 	return nil

@@ -18,7 +18,7 @@ package observer
 
 // copy from https://github.com/bestchains/fabric-operator/blob/d717b9e2df3319aaeaa5d804afec515ad8b948d3/pkg/connector/profile.go#L38-L138
 
-// Profile contasins all we need to connect with a blockchain network. Currently we use embeded pem by default
+// Profile contasins all we need to connect with a blockchain network. Currently we use embedded pem by default
 // +k8s:deepcopy-gen=true
 type Profile struct {
 	Version       string `yaml:"version,omitempty" json:"version,omitempty"`
@@ -95,7 +95,7 @@ type OrganizationInfo struct {
 	SignedCert      Pem `yaml:"signedCert,omitempty" json:"signedCert,omitempty"`
 }
 
-// User is the ca identity which has a private key(embeded pem) and signed certificate(embeded pem)
+// User is the ca identity which has a private key(embedded pem) and signed certificate(embedded pem)
 // +k8s:deepcopy-gen=true
 type User struct {
 	Name string `yaml:"name,omitempty" json:"name,omitempty"`

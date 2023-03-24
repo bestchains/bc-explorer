@@ -4,17 +4,23 @@ go 1.18
 
 require (
 	github.com/IBM-Blockchain/fabric-operator v0.0.0-00010101000000-000000000000
+	github.com/go-logr/logr v1.2.2
 	github.com/go-pg/pg/v10 v10.11.0
 	github.com/gofiber/fiber/v2 v2.42.0
 	github.com/hyperledger/fabric-gateway v1.2.2
 	github.com/hyperledger/fabric-protos-go-apiv2 v0.2.0
+	github.com/onsi/ginkgo/v2 v2.1.4
+	github.com/onsi/gomega v1.19.0
 	github.com/pkg/errors v0.9.1
+	github.com/tektoncd/pipeline v0.33.0
 	google.golang.org/grpc v1.53.0
 	google.golang.org/protobuf v1.28.1
+	k8s.io/api v0.22.5
 	k8s.io/apimachinery v0.22.5
 	k8s.io/apiserver v0.22.5
 	k8s.io/client-go v0.22.5
 	k8s.io/klog/v2 v2.90.1
+	sigs.k8s.io/controller-runtime v0.10.3
 )
 
 require (
@@ -44,7 +50,7 @@ require (
 	github.com/ghodss/yaml v1.0.0 // indirect
 	github.com/go-kit/log v0.1.0 // indirect
 	github.com/go-logfmt/logfmt v0.5.0 // indirect
-	github.com/go-logr/logr v1.2.2 // indirect
+	github.com/go-logr/zapr v0.4.0 // indirect
 	github.com/go-openapi/jsonpointer v0.19.5 // indirect
 	github.com/go-openapi/jsonreference v0.19.5 // indirect
 	github.com/go-openapi/swag v0.19.15 // indirect
@@ -91,7 +97,6 @@ require (
 	github.com/savsgio/gotils v0.0.0-20220530130905-52f3993e8d6d // indirect
 	github.com/spf13/cobra v1.3.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
-	github.com/tektoncd/pipeline v0.33.0 // indirect
 	github.com/tinylib/msgp v1.1.6 // indirect
 	github.com/tmthrgd/go-hex v0.0.0-20190904060850-447a3041c3bc // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
@@ -134,7 +139,6 @@ require (
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
-	k8s.io/api v0.22.5 // indirect
 	k8s.io/apiextensions-apiserver v0.22.5 // indirect
 	k8s.io/component-base v0.22.5 // indirect
 	k8s.io/kube-openapi v0.0.0-20220114203427-a0453230fd26 // indirect
@@ -142,9 +146,13 @@ require (
 	knative.dev/pkg v0.0.0-20220131144930-f4b57aef0006 // indirect
 	mellium.im/sasl v0.3.1 // indirect
 	sigs.k8s.io/apiserver-network-proxy/konnectivity-client v0.0.22 // indirect
-	sigs.k8s.io/controller-runtime v0.10.3 // indirect
 	sigs.k8s.io/structured-merge-diff/v4 v4.1.2 // indirect
 	sigs.k8s.io/yaml v1.3.0 // indirect
 )
 
-replace github.com/IBM-Blockchain/fabric-operator => github.com/bestchains/fabric-operator v0.1.3-0.20230324052234-d879467a38d5
+replace (
+	github.com/IBM-Blockchain/fabric-operator => github.com/bestchains/fabric-operator v0.1.3-0.20230324052234-d879467a38d5
+	github.com/go-logr/logr => github.com/go-logr/logr v0.4.0
+	github.com/hyperledger/fabric-protos-go => github.com/Abirdcfly/fabric-protos-go v0.0.0-20230324110652-fee4e1b29726
+	k8s.io/klog/v2 => k8s.io/klog/v2 v2.9.0
+)
