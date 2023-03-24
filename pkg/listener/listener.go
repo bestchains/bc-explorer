@@ -19,6 +19,7 @@ package listener
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"sync"
 
 	"github.com/bestchains/bc-explorer/pkg/errorsq"
@@ -107,7 +108,7 @@ func (l *listener) preRegister(net *models.Network) error {
 			return errors.Wrap(errInvalidNetworkProfile, err.Error())
 		}
 		n.FabProfile = fabProfile
-		startBlock, err := l.selector.NetworkStartAt(net.ID)
+		startBlock, err := l.selector.NetworkStartAt(n.ID)
 		if err != nil {
 			l.errq.Send(err)
 		}
@@ -132,6 +133,11 @@ func (l *listener) Selector() Selector {
 func (l *listener) Register(n *network.Network) error {
 	l.lock.Lock()
 	defer l.lock.Unlock()
+
+	// Use {network}_{channel} to identity a blockchain uniquely
+	if n.Type() == network.FABRIC && n.FabProfile.Channel != "" {
+		n.ID = fmt.Sprintf("%s_%s", n.ID, n.FabProfile.Channel)
+	}
 
 	if _, ok := l.networks[n.ID]; ok {
 		return errNetworkAlreadyExists

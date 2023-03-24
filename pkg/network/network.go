@@ -17,8 +17,6 @@ limitations under the License.
 package network
 
 import (
-	"strings"
-
 	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
 
@@ -27,7 +25,7 @@ import (
 
 var (
 	errMissingFabNetProfile = errors.New("missing fabric network's profile")
-	errInvalidFabNetID      = errors.New("fabric network has invalid id.must in format {network}_{channel}")
+	errMissingFabChannel    = errors.New("missing field channel in fabric network's profile")
 	errInvalidX509Cert      = errors.New("invalid x509 certificate")
 )
 
@@ -45,7 +43,7 @@ const (
 )
 
 type Network struct {
-	ID          string `json:"id"`
+	ID          string `json:"id"` // network metadat.name
 	Platform    `json:"platform"`
 	*FabProfile `json:"fabProfile,omitempty"`
 }
@@ -72,16 +70,13 @@ func NewFabricClient(n *Network) (*FabricClient, error) {
 	}
 
 	profile := n.FabProfile
-
-	// {network}_{channel}
-	idc := strings.Split(n.ID, "_")
-	if len(idc) < 2 {
-		return nil, errInvalidFabNetID
+	if profile.Channel == "" {
+		klog.Error(errMissingFabChannel)
+		return nil, errMissingFabChannel
 	}
-	channel := idc[len(idc)-1]
 
 	klog.V(5).Infof("initialize a fabric client conn for network: %s", n.ID)
-	clientConn, err := newFabClientConn(profile, channel)
+	clientConn, err := newFabClientConn(profile)
 	if err != nil {
 		klog.Error(err)
 		return nil, err
@@ -103,7 +98,7 @@ func NewFabricClient(n *Network) (*FabricClient, error) {
 
 	return &FabricClient{
 		gw:             gateway,
-		primaryChannel: gateway.GetNetwork(channel),
+		primaryChannel: gateway.GetNetwork(profile.Channel),
 	}, nil
 }
 

@@ -11,6 +11,7 @@ bc-explorer is a block explorer for **bestchains** which has three components :
     - `register` a new blockchain network
     - `deregister` a blockchain network
 - `observer`: observe network status in `bestchains` platform and automatically register/deregister networks into `listener`
+- `client`: fabric test client to help generate contract calls
 
 
 > NOTE: For API authorization & authentication,we will use [kube-rbac-proxy](https://github.com/brancz/kube-rbac-proxy).
@@ -129,6 +130,44 @@ Usage of ./bin/viewer:
 
 # connect to pg database test service
 ./bin/viewer -v=5 -dsn='postgres://username:password@127.0.0.1:5432/bc-explorer?sslmode=disable'
+```
+
+#### Client
+1. build bc-explorer client
+```
+go build -o bin/client cmd/client/*
+```
+
+2. verify `client`
+```
+Usage of ./bin/client:
+  -args value
+        a list of arguments for contract call
+  -contract string
+        contract name (default "samplecc")
+  -method string
+        contract method (default "PutValue")
+  -profile string
+        profile to connect with blockchain network (default "./network.json")
+```
+
+3. example for `client`
+
+For a contract [`samplecc`](https://github.com/bestchains/fabric-builder-k8s/blob/main/samples/go-contract/main.go), we use `client` to call `PutValue`
+
+```
+./bin/client -profile ./test/sample_fabric_network.json -contract samplecc -method PutValue -args platform -args bestchains
+```
+
+After this contract call, a transaction will be injected to `bc-explorer` with network id `blkexp_blkexp6`. A pair of `Key-Value`(`{"platform":"bestchains"}`) will be stored into blockchain statedb. 
+
+Contract call can be verified by  `GetValue`
+```
+./bin/client -profile ./test/sample_fabric_network.json -contract samplecc -method GetValue -args platform
+```
+Output:
+```
+I0324 10:24:01.523211   21170 main.go:71] Result: bestchains
 ```
 
 ## Development
