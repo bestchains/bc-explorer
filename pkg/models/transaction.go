@@ -18,6 +18,8 @@ package models
 
 type TxType string
 
+const TransactionTableName = "transactions"
+
 const (
 	Config              TxType = "Config"
 	ConfigUpdate        TxType = "ConfigUpdate"

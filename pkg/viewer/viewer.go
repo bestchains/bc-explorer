@@ -5,7 +5,7 @@ Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
 
-    http://www.apache.org/licenses/LICENSE-2.0
+	http://www.apache.org/licenses/LICENSE-2.0
 
 Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,19 +18,19 @@ package viewer
 
 import (
 	"fmt"
-	"net/http"
-
 	"github.com/go-pg/pg/v10"
 	"github.com/gofiber/fiber/v2"
 	"k8s.io/klog/v2"
+	"net/http"
 )
 
 type handler struct {
-	block Block
+	block       Block
+	transaction Transaction
 }
 
-func NewViewHandler(b Block) handler {
-	return handler{block: b}
+func NewViewHandler(t Transaction, b Block) handler {
+	return handler{transaction: t, block: b}
 }
 
 func (h *handler) ListBlocks(ctx *fiber.Ctx) error {
@@ -81,6 +81,65 @@ func (h *handler) GetBlock(ctx *fiber.Ctx) error {
 		if pg.ErrNoRows == err {
 			ctx.Status(http.StatusNotFound)
 			msg = fmt.Sprintf("not found block %s", blockHash)
+		}
+		return ctx.JSON(map[string]string{"msg": msg})
+	}
+
+	return ctx.JSON(result)
+}
+
+func (h *handler) ListTransactions(ctx *fiber.Ctx) error {
+	klog.Infof("viewer list transactions")
+
+	arg := TransArg{
+		From:        ctx.QueryInt("from", 0),
+		Size:        ctx.QueryInt("size", 10),
+		NetworkName: ctx.Params("network"),
+		StartTime:   int64(ctx.QueryInt("startTime", 0)),
+		EndTime:     int64(ctx.QueryInt("endTime", 0)),
+		Hash:        ctx.Query("id"),
+		BlockNum:    uint64(ctx.QueryInt("blockNumber", 0)),
+	}
+	klog.V(5).Infof(" with ctx %+v arg: %=v\n", *ctx, arg)
+	result, count, err := h.transaction.List(arg)
+
+	if err != nil {
+		ctx.Status(http.StatusInternalServerError)
+		return ctx.JSON(err.Error())
+	}
+
+	data := map[string]interface{}{
+		"data":  result,
+		"count": count,
+	}
+	return ctx.JSON(data)
+}
+
+func (h *handler) GetTransactionByTxHash(ctx *fiber.Ctx) error {
+	klog.Info("viewer GetTransactionByTxHash")
+	txHash := ctx.Params("txHash")
+	network := ctx.Params("network")
+	if txHash == "" {
+		return fiber.NewError(http.StatusBadRequest, "transaction hash can't be empty")
+	}
+	if network == "" {
+		return fiber.NewError(http.StatusBadRequest, "network name can't be empty")
+	}
+	arg := TransArg{
+		NetworkName: network,
+		Hash:        txHash,
+	}
+	klog.V(5).Infof(" with ctx %+v, arg: %+v\n", *ctx, arg)
+
+	result, err := h.transaction.Get(arg)
+
+	if err != nil {
+		klog.Error(fmt.Sprintf("get transaction error: %s", err))
+		msg := err.Error()
+		ctx.Status(http.StatusInternalServerError)
+		if pg.ErrNoRows == err {
+			ctx.Status(http.StatusNotFound)
+			msg = fmt.Sprintf("transaction hash not found: %s", txHash)
 		}
 		return ctx.JSON(map[string]string{"msg": msg})
 	}
