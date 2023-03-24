@@ -32,7 +32,7 @@ type Transaction struct {
 	Creator     string `pg:"creator"`
 
 	Type    TxType `pg:"type"`
-	Payload []byte `pg:"config"`
+	Payload []byte `pg:"payload"`
 
 	// EndorserTransaction
 	ChaincodeID string   `pg:"chaincodeId"`
