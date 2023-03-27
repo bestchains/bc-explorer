@@ -18,6 +18,7 @@ package viewer
 
 import (
 	"fmt"
+
 	"github.com/go-pg/pg/v10"
 	"k8s.io/klog/v2"
 
@@ -78,7 +79,6 @@ func NewTxHandler(db *pg.DB) Transaction {
 
 func (t *TxHandler) List(ta TransArg) ([]models.Transaction, int64, error) {
 
-	var hd TxHandler
 	if ta.NetworkName == "" {
 		return nil, 0, fmt.Errorf("network name can't be empty")
 	}
@@ -87,7 +87,7 @@ func (t *TxHandler) List(ta TransArg) ([]models.Transaction, int64, error) {
 	query, params := ta.ToCond()
 	klog.V(5).Infof(" list query %s\n", query)
 
-	q := hd.db.Model(&txs)
+	q := t.db.Model(&txs)
 	for i := 0; i < len(query); i++ {
 		q = q.Where(query[i], params[i])
 	}
@@ -109,7 +109,7 @@ func (t *TxHandler) List(ta TransArg) ([]models.Transaction, int64, error) {
 
 func (t *TxHandler) Get(ta TransArg) (*models.Transaction, error) {
 	var tx = new(models.Transaction)
-	_, err := t.db.QueryOne(&tx, `select * from transactions where "id" = ?`, ta.Hash)
+	_, err := t.db.QueryOne(tx, `select * from transactions where "id" = ?`, ta.Hash)
 	if err != nil {
 		return nil, err
 	}
