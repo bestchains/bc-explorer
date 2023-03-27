@@ -13,9 +13,10 @@ spec:
       labels:
         app: bc-explorer
     spec:
+      serviceAccountName: bc-explorer
       containers:
       - name: viewer
-        image: hyperledgerk8s/bc-explorer:v0.2
+        image: hyperledgerk8s/bc-explorer:v0.1.0
         command:
         - viewer
         args:
@@ -24,7 +25,7 @@ spec:
         ports:
         - containerPort: 9998
       - name: listener
-        image:  hyperledgerk8s/bc-explorer:v0.2
+        image:  hyperledgerk8s/bc-explorer:v0.1.0
         command:
         - listener
         args:
@@ -32,3 +33,10 @@ spec:
         - -dsn=postgres://username:password@postgresql.172.22.96.209.nip.io/bc-explorer?sslmode=disable
         ports:
         - containerPort: 9999
+      - name: observer
+        image: hyperledgerk8s/bc-explorer:v0.1.0
+        command:
+          - observer
+        args:
+          - -v=5
+          - -host=http://127.0.0.1:9999
