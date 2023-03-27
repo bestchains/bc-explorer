@@ -1,0 +1,53 @@
+name: Build image
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  image:
+    if: github.repository == 'bestchains/bc-explorer'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - name: Set Variable
+        id: set-env
+        run: |
+          echo "TAG=$(git describe --abbrev=0 --tags --match 'v*' 2>/dev/null || echo 'v0.1.0')" >> $GITHUB_OUTPUT
+          echo "DATE=$(TZ=Asia/Shanghai date +'%Y%m%d')" >> $GITHUB_OUTPUT
+      - name: Show Variable
+        run: echo "varibables ${{ steps.set-env.outputs.TAG }}-${{ steps.set-env.outputs.DATE }}"
+      - uses: benjlevesque/short-sha@v2.1
+        name: Get short commit sha
+        id: short-sha
+      - name: Build image
+        run: make image
+      - name: If on pull request, stop push image
+        if: github.event_name == 'pull_request'
+        run: exit 0
+      - name: Login to the dockerhub Registry
+        uses: docker/login-action@v2
+        with:
+          username: hyperledgerk8s
+          password: ${{ secrets.DOCKER_TOKEN }}
+      - name: retag and push
+        run: |
+          image=$(docker images --format '{{.Repository}}:{{.Tag}}' | grep bc-explorer)
+          docker tag ${image} hyperledgerk8s/bc-explorer:latest
+          docker push hyperledgerk8s/bc-explorer:latest
+          docker tag ${image} hyperledgerk8s/bc-explorer:v${{ steps.set-env.outputs.DATE }}
+          docker push hyperledgerk8s/bc-explorer:v${{ steps.set-env.outputs.DATE }}
+          docker tag ${image} hyperledgerk8s/bc-explorer:${{ steps.set-env.outputs.TAG }}-${{ steps.short-sha.outputs.sha }}
+          docker push hyperledgerk8s/bc-explorer:${{ steps.set-env.outputs.TAG }}-${{ steps.short-sha.outputs.sha }}
+          docker tag ${image} hyperledgerk8s/bc-explorer:v${{ steps.set-env.outputs.DATE }}-${{ steps.short-sha.outputs.sha }}
+          docker push hyperledgerk8s/bc-explorer:v${{ steps.set-env.outputs.DATE }}-${{ steps.short-sha.outputs.sha }}
+          docker tag ${image} hyperledgerk8s/bc-explorer:${{ steps.set-env.outputs.TAG }}-${{ steps.set-env.outputs.DATE }}
+          docker push hyperledgerk8s/bc-explorer:${{ steps.set-env.outputs.TAG }}-${{ steps.set-env.outputs.DATE }}
+          docker tag ${image} hyperledgerk8s/bc-explorer:${{ steps.set-env.outputs.TAG }}-${{ steps.set-env.outputs.DATE }}-${{ steps.short-sha.outputs.sha }}
+          docker push hyperledgerk8s/bc-explorer:${{ steps.set-env.outputs.TAG }}-${{ steps.set-env.outputs.DATE }}-${{ steps.short-sha.outputs.sha }}
+          docker tag ${image} hyperledgerk8s/bc-explorer:${{ steps.short-sha.outputs.sha }}
+          docker push hyperledgerk8s/bc-explorer:${{ steps.short-sha.outputs.sha }}

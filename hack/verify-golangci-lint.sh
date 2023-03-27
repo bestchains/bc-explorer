@@ -32,7 +32,7 @@ cd "${ROOT_PATH}"
 
 echo "running golangci-lint"
 
-if golangci-lint run ./...; then
+if golangci-lint run -v --timeout 5m ./...; then
 	echo "golangci-lint verified."
 else
 	echo "golangci-lint failed."
