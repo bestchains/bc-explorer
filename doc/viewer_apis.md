@@ -162,7 +162,6 @@ go build main.go
 | :--: | :--: | :--: | :--: |
 | from | 分页开始 | 否 | 0 |
 | size | 每页的数量 | 否 | 10 |
-| channel | 通道名称 | 是 |  |
 | startTime | 开始时间 | 否 |  |
 | endTime | 结束时间 | 否 |  |
 | blockNumber | 根据区块号搜索，完全匹配 | 否 | |
