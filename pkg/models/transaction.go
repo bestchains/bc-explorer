@@ -27,19 +27,19 @@ const (
 )
 
 type Transaction struct {
-	ID          string `pg:"id,pk"`
-	Network     string `pg:"network"`
-	BlockNumber uint64 `pg:"blockNumber"`
-	CreatedAt   int64  `pg:"createdAt"`
-	Creator     string `pg:"creator"`
+	ID          string `pg:"id,pk" json:"id"`
+	Network     string `pg:"network" json:"network"`
+	BlockNumber uint64 `pg:"blockNumber" json:"blockNumber"`
+	CreatedAt   int64  `pg:"createdAt" json:"createdAt"`
+	Creator     string `pg:"creator" json:"creator"`
 
-	Type    TxType `pg:"type"`
-	Payload []byte `pg:"payload"`
+	Type    TxType `pg:"type" json:"type"`
+	Payload []byte `pg:"payload" json:"payload"`
 
 	// EndorserTransaction
-	ChaincodeID string   `pg:"chaincodeId"`
-	Method      string   `pg:"method"`
-	Args        []string `pg:"args"`
+	ChaincodeID string   `pg:"chaincodeId" json:"chaincodeId"`
+	Method      string   `pg:"method" json:"method"`
+	Args        []string `pg:"args" json:"args"`
 
-	ValidationCode int32 `pg:"validationCode"`
+	ValidationCode int32 `pg:"validationCode" json:"validationCode"`
 }

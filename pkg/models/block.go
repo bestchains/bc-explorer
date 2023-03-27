@@ -19,12 +19,12 @@ package models
 const BlockTableName = "blocks"
 
 type Block struct {
-	BlockHash         string `pg:"blockHash,pk"`
-	Network           string `pg:"network"`
-	BlockNumber       uint64 `pg:"blockNumber"`
-	PrevioudBlockHash string `pg:"preBlockHash"`
-	DataHash          string `pg:"dataHash"`
-	CreatedAt         int64  `pg:"createdAt"`
-	BlockSize         int    `pg:"blockSize"`
-	TxCount           int    `pg:"txCount"`
+	BlockHash         string `pg:"blockHash,pk" json:"blockHash"`
+	Network           string `pg:"network" json:"network"`
+	BlockNumber       uint64 `pg:"blockNumber" json:"blockNumber"`
+	PrevioudBlockHash string `pg:"preBlockHash" json:"preBlockHash"`
+	DataHash          string `pg:"dataHash" json:"dataHash"`
+	CreatedAt         int64  `pg:"createdAt" json:"createdAt"`
+	BlockSize         int    `pg:"blockSize" json:"blockSize"`
+	TxCount           int    `pg:"txCount" json:"txCount"`
 }
