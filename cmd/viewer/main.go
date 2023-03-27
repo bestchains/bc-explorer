@@ -56,6 +56,7 @@ func run() error {
 
 	klog.Infoln("init db")
 	block := viewer.NewBlockLoggerHandler()
+	var transaction viewer.Transaction
 	if *db == "pg" {
 		klog.Infoln("Using postgreSQL")
 		opts, err := pg.ParseURL(*dsn)
@@ -69,6 +70,7 @@ func run() error {
 		}
 
 		block = viewer.NewBlockHandler(pgDB)
+		transaction = viewer.NewTxHandler(pgDB)
 	}
 	klog.Infoln("Creating http server")
 	app := fiber.New(fiber.Config{
@@ -78,7 +80,7 @@ func run() error {
 		AppName:       "bc-explorer-viewer",
 	})
 
-	viewerHandler := viewer.NewViewHandler(block)
+	viewerHandler := viewer.NewViewHandler(transaction, block)
 	app.Use(cors.New(cors.ConfigDefault))
 	app.Use(logger.New(logger.Config{
 		Format: "[${ip}]:${port} ${status} - ${method} ${path}\n",
@@ -88,6 +90,9 @@ func run() error {
 	// app.Get("/blocks", handler.List)
 	app.Get("/networks/:network/blocks", viewerHandler.ListBlocks)
 	app.Get("/networks/:network/blocks/:blockHash", viewerHandler.GetBlock)
+
+	app.Get("/networks/:network/transactions", viewerHandler.ListTransactions)
+	app.Get("/networks/:network/transactions/:txHash", viewerHandler.GetTransactionByTxHash)
 
 	if err := app.Listen(*addr); err != nil {
 		errq.Send(err)

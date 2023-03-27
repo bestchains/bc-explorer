@@ -155,7 +155,7 @@ go build main.go
 ### 3.1 获取交易列表
 `描述`: 获取交易列表
 
-`接口`: GET /transactions
+`接口`: GET /networks/:network/transactions
 
 `query参数`:
 | 参数名称 | 参数描述 | 必填 | 默认值 |
@@ -166,7 +166,6 @@ go build main.go
 | startTime | 开始时间 | 否 |  |
 | endTime | 结束时间 | 否 |  |
 | blockNumber | 根据区块号搜索，完全匹配 | 否 | |
-| txHash | 根据交易hash搜索，完全匹配 | 否 | | 
 
 `返回`:
 
@@ -195,7 +194,7 @@ go build main.go
 `描述`: 获取交易详情
 
 
-`接口`: GET /transactions/:txhash
+`接口`: GET /networks/:network/transactions/:txHash
 
 `返回`:
 
