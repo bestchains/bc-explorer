@@ -86,7 +86,7 @@ type pqInjector struct {
 func (pqitr *pqInjector) InjectNetworks(nets ...*models.Network) error {
 	for _, net := range nets {
 		klog.V(5).Infof("PQInjector: inject network %s", net.ID)
-		_, err := pqitr.db.Model(net).OnConflict("(id) DO UPDATE").Set("status = EXCLUDED.status").Insert()
+		_, err := pqitr.db.Model(net).OnConflict("(id) DO UPDATE").Set("status = EXCLUDED.status, profile = EXCLUDED.profile").Insert()
 		if err != nil {
 			return err
 		}

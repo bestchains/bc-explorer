@@ -19,19 +19,25 @@ package observer
 import (
 	"context"
 	"fmt"
+	"strings"
+	"time"
 
 	"github.com/IBM-Blockchain/fabric-operator/pkg/generated/informers/externalversions"
 	"github.com/bestchains/bc-explorer/pkg/network"
+	"k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
 
 	"github.com/IBM-Blockchain/fabric-operator/pkg/generated/clientset/versioned"
+	corev1 "k8s.io/api/core/v1"
+	coreInformers "k8s.io/client-go/informers/core/v1"
 
 	"k8s.io/client-go/rest"
 	"k8s.io/klog/v2"
 )
 
-func Run(ctx context.Context, config *rest.Config, host string) (err error) {
+func Run(ctx context.Context, config *rest.Config, host, operatorNamespace string) (err error) {
+	defer runtime.HandleCrash()
 	klog.V(5).Infof("observer start...")
 	vclient, err := versioned.NewForConfig(config)
 	if err != nil {
@@ -44,12 +50,12 @@ func Run(ctx context.Context, config *rest.Config, host string) (err error) {
 
 	informerFactory := externalversions.NewSharedInformerFactory(vclient, 0)
 	channelInformer := informerFactory.Ibp().V1beta1().Channels()
-	profile := make(chan network.Network, 100)
-	names := make(chan string, 100)
-	watcher := NewWatcher(profile, names, client, vclient)
+	msg := make(chan Msg, 100)
+	watcher := NewWatcher(msg, client, vclient, operatorNamespace)
 	channelInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
-		AddFunc:    watcher.ChannelCreate,
+		// channelUpdate can watch channel status change, eg Archived
 		UpdateFunc: watcher.ChannelUpdate,
+		// channelDelete can watch channel delete
 		DeleteFunc: watcher.ChannelDelete,
 	})
 	informerFactory.Start(ctx.Done())
@@ -58,8 +64,49 @@ func Run(ctx context.Context, config *rest.Config, host string) (err error) {
 		klog.ErrorS(err, "cannot sync caches")
 		return err
 	}
+
+	conConfigMapInformer := coreInformers.NewConfigMapInformer(client, operatorNamespace, 12*time.Hour, cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc})
+	conConfigMapInformer.AddEventHandler(cache.FilteringResourceEventHandler{
+		FilterFunc: func(obj interface{}) bool {
+			if cast, ok := obj.(*corev1.ConfigMap); ok {
+				return IsConfigMapHasProfile(cast.Name)
+			}
+			if tombstone, ok := obj.(cache.DeletedFinalStateUnknown); ok {
+				if cast, ok := tombstone.Obj.(*corev1.ConfigMap); ok {
+					return IsConfigMapHasProfile(cast.Name)
+				}
+			}
+			return false
+		},
+		Handler: cache.ResourceEventHandlerFuncs{
+			// profileConfigmapCreate can watch channel create
+			AddFunc: watcher.ProfileConfigMapCreate,
+			// profileConfigmapUpdate can watch channel update, peers update, user cert update and so on.
+			UpdateFunc: watcher.ProfileConfigMapUpdate,
+		},
+	})
+	go conConfigMapInformer.Run(ctx.Done())
 	klog.V(5).Infoln("observer init finish.")
-	pusher := NewPusher(host, profile, names)
+	pusher := NewPusher(host, msg)
 	pusher.Run(ctx)
 	return nil
+}
+
+type Msg struct {
+	ChannelName string
+	NetworkName string
+	Type        MsgType
+	Data        *network.Network
+}
+
+type MsgType int
+
+const (
+	Register   MsgType = 1
+	Deregister MsgType = 1 << iota
+	Delete     MsgType = 1 << iota
+)
+
+func IsConfigMapHasProfile(name string) bool {
+	return strings.HasPrefix(name, "chan-") && strings.HasSuffix(name, "-connection-profile")
 }
