@@ -146,3 +146,34 @@ func (h *handler) GetTransactionByTxHash(ctx *fiber.Ctx) error {
 
 	return ctx.JSON(result)
 }
+
+func (h *handler) CountTransactionsCreatedByOrg(ctx *fiber.Ctx) error {
+	klog.Info("viewer count transactions created by certain organization")
+	network := ctx.Params("network")
+	if network == "" {
+		return fiber.NewError(http.StatusBadRequest, "network name can't be empty")
+	}
+	arg := TransArg{
+		NetworkName: network,
+	}
+	klog.V(5).Infof(" with ctx %+v, arg: %+v\n", *ctx, arg)
+
+	result, err := h.transaction.CountByOrg(arg)
+	if err != nil {
+		klog.Error(fmt.Sprintf("count transaction error: %s", err))
+		msg := err.Error()
+		ctx.Status(http.StatusInternalServerError)
+		if pg.ErrNoRows == err {
+			ctx.Status(http.StatusNotFound)
+			msg = fmt.Sprintf("no transactions found")
+		}
+		return ctx.JSON(map[string]string{"msg": msg})
+	}
+
+	data := map[string]interface{}{
+		"data":  result,
+		"count": len(result),
+	}
+
+	return ctx.JSON(data)
+}
