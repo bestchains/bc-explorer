@@ -18,19 +18,22 @@ package viewer
 
 import (
 	"fmt"
+	"net/http"
+	"time"
+
 	"github.com/go-pg/pg/v10"
 	"github.com/gofiber/fiber/v2"
 	"k8s.io/klog/v2"
-	"net/http"
 )
 
 type handler struct {
 	block       Block
 	transaction Transaction
+	overview    Overview
 }
 
-func NewViewHandler(t Transaction, b Block) handler {
-	return handler{transaction: t, block: b}
+func NewViewHandler(t Transaction, b Block, o Overview) handler {
+	return handler{transaction: t, block: b, overview: o}
 }
 
 func (h *handler) ListBlocks(ctx *fiber.Ctx) error {
@@ -176,4 +179,39 @@ func (h *handler) CountTransactionsCreatedByOrg(ctx *fiber.Ctx) error {
 	}
 
 	return ctx.JSON(data)
+}
+
+func (h *handler) Summary(ctx *fiber.Ctx) error {
+	klog.Info("viewer Summary")
+	klog.V(5).Infof(" with ctx %+v\n", *ctx)
+	network := ctx.Params("network")
+	result, err := h.overview.Summary(network)
+	if err != nil {
+		klog.Error(err)
+		ctx.Status(http.StatusInternalServerError)
+		return ctx.JSON(map[string]interface{}{"msg": err.Error()})
+	}
+	return ctx.JSON(result)
+}
+
+func (h *handler) QueryBySeg(ctx *fiber.Ctx) error {
+	klog.Info("viewer QueryBySeg")
+	klog.V(5).Infof(" with ctx %+v\n", *ctx)
+
+	from := int64(ctx.QueryInt("from"))
+	if from == 0 {
+		from = time.Now().Unix()
+	}
+	interval := int64(ctx.QueryInt("interval", 300))
+	number := int64(ctx.QueryInt("number", 5))
+	_type := ctx.Query("type", BlockAggregation)
+	network := ctx.Params("network")
+
+	result, err := h.overview.QueryBySeg(from, interval, number, _type, network)
+	if err != nil {
+		klog.Error(err)
+		ctx.Status(http.StatusInternalServerError)
+		return ctx.JSON(map[string]interface{}{"msg": err.Error()})
+	}
+	return ctx.JSON(result)
 }

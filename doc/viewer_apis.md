@@ -13,79 +13,74 @@ go build main.go
 ./main -v=5 -dsn='postgres://user:password@ip:port/dbname?sslmode=disable'
 ```
 
-## ~~1.浏览器总览页面(暂时不用看)~~
+## 1.浏览器总览页面
 
-<details>
 ### 1.1 获取接触总览信息
 
 `描述`: 根据选择的通道，得到下面的信息
-**需要明确下面的数据如何获取**
 
-- 区块高度 (blockNumber)
-- 交易数量 (transaction表的总行数)
-- 节点数量 (需要从集群获取?)
-- 合约总数 ()
-
-`接口`: /overview
+`接口`: /networks/:network/overview/summary
 
 `返回`:
 
 ```json
 {
-    "blockHigh": 4,
-    "transaction": 4,
-    "nodes": 1,
-    "contracts": 1
+    "blockNumber": "4 iunt64 -- 区块高度",
+    "txCount": "4 uint64 -- 交易数量",
 }
 ```
 
-### 1.2 节点
 
-`描述`: 返回节点列表
-需要获取加入通道的peer节点列表, 需要连接集群
+### 1.2 分段查询
 
-`接口`: /overview/nodes
+`描述`: 对交易，区块，按时间范围分段查询
+
+`接口`: /networks/:network/overview/query-by-seg?from=0&interval=5&number=2&type=blocks
+
+`query参数`:
+| 参数名称 | 参数描述 | 必填 | 默认值 |
+| :--: | :--: | :--: | :--: |
+| from | 开始时间, 也就是横轴x=0的时候， | 是 | 当前时间 |
+| interval | 周期，单位是秒，一小时传递3600，10分钟传递600. | 是 | 300 |
+| number | 查询多少段 | 是 | 5 |
+| type | 查询区块(blocks)，或者交易(transactions) | 是 | blocks |
+
+
+```
+按照from=0,interval=5,number=2 理解
+|     |      |      |
+-5    0     5      10
+也就是后端会多计算一段数据[from-interval, from]，如果没有这段计算，图表的开始位置数据是0，与预期是不一致的。
+```
 
 `返回`: 
 
 返回值字段对应需要明确
 ```json
-{
-    "nodeName": "peer-name",
-    "nodeType": "??", 
-    "org": "",
-    "createTime": "2023",
-    "status": "??"
-}
+[
+    {
+        "start": "-5 int64 -- 开始时间",
+        "end": "0 int64 -- 结束时间",
+        "count": "1 int64 -- 数量",
+    },
+    {
+        "start": 0,
+        "end": 5,
+        "count": 2,
+    },
+    {
+        "start:"5,
+        "end": 10,
+        "count": 3,
+    }
+]
 ```
 
-
-### 1.3 最新区块
-
-`描述`: 返回最新的n条区块数据
-
-`接口`: /overview/latest-block
-
-`返回`: 
-
-```json
-{
-    "blockHigh": 1,
-    "blockHash": "1234",
-    "txCount": 1,
-    "createTime": "2023"
-}
-```
-
-### 1.4 数据
-`描述`: 展示最近n小时的区块等数据
-
-### 1.5 每个组织的交易数量
+### 1.3 每个组织的交易数量
 
 `描述`: 根据creator分组，计算每个组的总数，得到百分比图。
 
 ---
-</details>
 
 
 

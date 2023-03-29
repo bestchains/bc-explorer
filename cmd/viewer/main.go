@@ -21,6 +21,7 @@ import (
 	"flag"
 
 	"github.com/bestchains/bc-explorer/pkg/errorsq"
+	"github.com/bestchains/bc-explorer/pkg/models"
 	"github.com/bestchains/bc-explorer/pkg/viewer"
 	"github.com/go-pg/pg/v10"
 	"github.com/gofiber/fiber/v2"
@@ -56,6 +57,7 @@ func run() error {
 
 	klog.Infoln("init db")
 	block := viewer.NewBlockLoggerHandler()
+	overview := viewer.NewOverviewLogger()
 	var transaction viewer.Transaction
 	if *db == "pg" {
 		klog.Infoln("Using postgreSQL")
@@ -68,9 +70,12 @@ func run() error {
 		if err := pgDB.Ping(pctx); err != nil {
 			panic(err)
 		}
+		pgDB.AddQueryHook(&models.Block{})
+		pgDB.AddQueryHook(&models.Transaction{})
 
 		block = viewer.NewBlockHandler(pgDB)
 		transaction = viewer.NewTxHandler(pgDB)
+		overview = viewer.NewOverview(pgDB)
 	}
 	klog.Infoln("Creating http server")
 	app := fiber.New(fiber.Config{
@@ -80,7 +85,7 @@ func run() error {
 		AppName:       "bc-explorer-viewer",
 	})
 
-	viewerHandler := viewer.NewViewHandler(transaction, block)
+	viewerHandler := viewer.NewViewHandler(transaction, block, overview)
 	app.Use(cors.New(cors.ConfigDefault))
 	app.Use(logger.New(logger.Config{
 		Format: "[${ip}]:${port} ${status} - ${method} ${path}\n",
@@ -94,6 +99,9 @@ func run() error {
 	app.Get("/networks/:network/transactions", viewerHandler.ListTransactions)
 	app.Get("/networks/:network/transactions/:txHash", viewerHandler.GetTransactionByTxHash)
 	app.Get("/networks/:network/transactionsCount", viewerHandler.CountTransactionsCreatedByOrg)
+
+	app.Get("/networks/:network/overview/summary", viewerHandler.Summary)
+	app.Get("/networks/:network/overview/query-by-seg", viewerHandler.QueryBySeg)
 
 	if err := app.Listen(*addr); err != nil {
 		errq.Send(err)
