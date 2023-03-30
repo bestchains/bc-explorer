@@ -16,6 +16,13 @@ limitations under the License.
 
 package models
 
+import (
+	"context"
+
+	"github.com/go-pg/pg/v10"
+	"k8s.io/klog/v2"
+)
+
 const BlockTableName = "blocks"
 
 type Block struct {
@@ -27,4 +34,19 @@ type Block struct {
 	CreatedAt         int64  `pg:"createdAt" json:"createdAt"`
 	BlockSize         int    `pg:"blockSize" json:"blockSize"`
 	TxCount           int    `pg:"txCount" json:"txCount"`
+}
+
+var _ pg.QueryHook = (*Block)(nil)
+
+func (*Block) BeforeQuery(ctx context.Context, event *pg.QueryEvent) (context.Context, error) {
+	query, err := event.FormattedQuery()
+	if err != nil {
+		return ctx, nil
+	}
+	klog.V(5).Infof("[format query] %s\n", string(query))
+	return ctx, nil
+}
+
+func (*Block) AfterQuery(ctx context.Context, event *pg.QueryEvent) error {
+	return nil
 }
