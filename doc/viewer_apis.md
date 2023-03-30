@@ -15,7 +15,7 @@ go build main.go
 
 ## 1.浏览器总览页面
 
-### 1.1 获取接触总览信息
+### 1.1 获取总览信息
 
 `描述`: 根据选择的通道，得到下面的信息
 
@@ -25,7 +25,7 @@ go build main.go
 
 ```json
 {
-    "blockNumber": "4 iunt64 -- 区块高度",
+    "blockNumber": "4 uint64 -- 区块高度",
     "txCount": "4 uint64 -- 交易数量",
 }
 ```

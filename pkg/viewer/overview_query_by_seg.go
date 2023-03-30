@@ -17,8 +17,11 @@ limitations under the License.
 package viewer
 
 import (
+	"sync"
+
 	"github.com/bestchains/bc-explorer/pkg/models"
 	"github.com/go-pg/pg/v10"
+	"k8s.io/klog/v2"
 )
 
 type BySegFunc func(*pg.DB, string, int64, int64, int64) ([]BySegResp, error)
@@ -33,61 +36,56 @@ var bySegFuncs = map[string]BySegFunc{
 // [-5,0),[0-5), [5-10)
 func QueryBlocks(db *pg.DB, network string, from, interval, number int64) ([]BySegResp, error) {
 	start := from - interval
-	end := from + number*interval
 	result := make([]BySegResp, number+1)
-	blocks := make([]models.Block, 0)
-	if err := db.Model(&blocks).Where(`"network"=?`, network).
-		Where(`"createdAt">=?`, start).Where(`"createdAt"<=?`, end).Order("createdAt asc").Select(); err != nil {
-		return result, err
-	}
+	ch := make(chan error, number+1)
+	var wg sync.WaitGroup
 	s, e := start, from
 	for i := 0; i <= int(number); i++ {
 		result[i] = BySegResp{Start: s, End: e, Count: 0}
+		wg.Add(1)
+		go func(i int, s, e int64) {
+			defer wg.Done()
+			if err := db.Model((*models.Block)(nil)).Where(`"network"=?`, network).Where(`"createdAt">=?`, s).Where(`"createdAt"<=?`, e).
+				ColumnExpr(`count(*) as count`).Select(&result[i].Count); err != nil {
+				ch <- err
+				klog.Error(err)
+				return
+			}
+		}(i, s, e)
 		s, e = e, e+interval
 	}
 
-	end = from
-	blockCount := int64(0)
-	index := 0
-	for _, block := range blocks {
-		if block.CreatedAt < end {
-			blockCount++
-			continue
-		}
-		result[index].Count = blockCount
-		blockCount = 1
-		end, index = end+interval, index+1
+	wg.Wait()
+	if len(ch) > 0 {
+		return nil, <-ch
 	}
-	result[index].Count = blockCount
 	return result, nil
 }
 
 func QueryTrnasactions(db *pg.DB, network string, from, interval, number int64) ([]BySegResp, error) {
 	start := from - interval
-	end := from + number*interval
 	result := make([]BySegResp, number+1)
-	transactions := make([]models.Transaction, 0)
-	if err := db.Model(&transactions).Where(`"network"=?`, network).
-		Where(`"createdAt">=?`, start).Where(`"createdAt"<=?`, end).Order("createdAt asc").Select(); err != nil {
-		return result, err
-	}
+	ch := make(chan error, number+1)
+	var wg sync.WaitGroup
 	s, e := start, from
 	for i := 0; i <= int(number); i++ {
 		result[i] = BySegResp{Start: s, End: e, Count: 0}
+		wg.Add(1)
+		go func(i int, s, e int64) {
+			defer wg.Done()
+			if err := db.Model((*models.Transaction)(nil)).Where(`"network"=?`, network).Where(`"createdAt">=?`, s).Where(`"createdAt"<=?`, e).
+				ColumnExpr(`count(*) as count`).Select(&result[i].Count); err != nil {
+				ch <- err
+				klog.Error(err)
+				return
+			}
+		}(i, s, e)
 		s, e = e, e+interval
 	}
 
-	end = from
-	txCount, index := int64(0), 0
-	for _, trans := range transactions {
-		if trans.CreatedAt < end {
-			txCount++
-			continue
-		}
-		result[index].Count = txCount
-		txCount = 1
-		end, index = end+interval, index+1
+	wg.Wait()
+	if len(ch) > 0 {
+		return nil, <-ch
 	}
-	result[index].Count = txCount
 	return result, nil
 }
