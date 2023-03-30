@@ -33,6 +33,11 @@ type TransArg struct {
 	BlockNum           uint64
 }
 
+type Count struct {
+	Creator string `pg:"creator" json:"creator"`
+	Count   int64  `pg:"count" json:"count"`
+}
+
 func (ta *TransArg) ToCond() ([]string, []interface{}) {
 	params := make([]interface{}, 0)
 	cond := make([]string, 0)
@@ -67,6 +72,9 @@ type Transaction interface {
 
 	// Get : query transaction by transaction hash
 	Get(ta TransArg) (*models.Transaction, error)
+
+	// CountByOrg : count how many transactions are created by each organization
+	CountByOrg(ta TransArg) ([]Count, error)
 }
 
 type TxHandler struct {
@@ -114,4 +122,18 @@ func (t *TxHandler) Get(ta TransArg) (*models.Transaction, error) {
 		return nil, err
 	}
 	return tx, err
+}
+
+func (t *TxHandler) CountByOrg(ta TransArg) ([]Count, error) {
+	if ta.NetworkName == "" {
+		return nil, fmt.Errorf("network name can't be empty")
+	}
+
+	var res []Count
+
+	if err := t.db.Model((*models.Transaction)(nil)).Where(`"network" = ?`, ta.NetworkName).Column(`creator`).ColumnExpr(`count(*) as "count"`).Group(`creator`).Select(&res); err != nil {
+		return nil, err
+	}
+
+	return res, nil
 }

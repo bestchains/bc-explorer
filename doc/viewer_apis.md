@@ -121,7 +121,7 @@ go build main.go
         "dataHash": "block.DataHash string -- 数据hash",
         "createdAt": "block.CreatedAt int64 -- 出块时间 秒"
     }],
-    "count": "10 int -- 查询总数",
+    "count": "10 int -- 查询总数"
 }
 ```
 
@@ -183,7 +183,7 @@ go build main.go
         "validationCode": "transaction.ValidationCode int32 -- 交易验证码 0是有效",
         "payload": "transatcion.Payload []byte -- Payload Proplsal Hash"
     }],
-    "count": 1,
+    "count": 1
 }
 ```
 
@@ -210,5 +210,23 @@ go build main.go
     "args": "transaction.Args [string] -- 合约相关参数",
     "validationCode": "transaction.ValidationCode int32 -- 交易验证码 0是有效",
     "payload": "transaction.Payload []byte -- Payload Proplsal Hash"
+}
+```
+
+### 3.3 获取由特定组织创建的交易数量
+
+`描述`: 获取由特定组织创建的交易的总数
+
+`接口`: GET /networks/:network/transactionsCount
+
+`返回`:
+
+```json
+{
+    "data": [{
+      "creator": "transaction.Creator string -- 发起者名称",
+      "count": "int -- 发起的交易总数"
+    }],
+    "count": 1
 }
 ```

@@ -93,6 +93,7 @@ func run() error {
 
 	app.Get("/networks/:network/transactions", viewerHandler.ListTransactions)
 	app.Get("/networks/:network/transactions/:txHash", viewerHandler.GetTransactionByTxHash)
+	app.Get("/networks/:network/transactionsCount", viewerHandler.CountTransactionsCreatedByOrg)
 
 	if err := app.Listen(*addr); err != nil {
 		errq.Send(err)
