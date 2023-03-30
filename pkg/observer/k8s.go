@@ -20,11 +20,15 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"reflect"
 	"sort"
 	"sync"
+	"time"
 
 	"github.com/bestchains/bc-explorer/pkg/network"
+	"github.com/google/go-cmp/cmp"
 	"github.com/pkg/errors"
+	corev1 "k8s.io/api/core/v1"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -34,33 +38,35 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/klog/v2"
+	"k8s.io/utils/strings/slices"
 )
 
 var (
-	ErrWrongTypeChannel = errors.New("wrong type of channel")
+	ErrWrongTypeChannel   = errors.New("wrong type of channel")
+	ErrWrongTypeConfigmap = errors.New("wrong type of configmap")
 )
 
 type Watcher struct {
-	Profile     chan<- network.Network
-	DeleteNames chan<- string
-	Client      *kubernetes.Clientset
-	VClient     *versioned.Clientset
-	Send        sync.Map
+	Msg               chan<- Msg
+	Client            *kubernetes.Clientset
+	VClient           *versioned.Clientset
+	Send              sync.Map
+	OperatorNamespace string
 }
 
-func NewWatcher(profile chan<- network.Network, deleteNames chan<- string, client *kubernetes.Clientset, vclient *versioned.Clientset) *Watcher {
+func NewWatcher(msg chan<- Msg, client *kubernetes.Clientset, vclient *versioned.Clientset, operatorNamespace string) *Watcher {
 	return &Watcher{
-		Profile:     profile,
-		DeleteNames: deleteNames,
-		Client:      client,
-		VClient:     vclient,
-		Send:        sync.Map{},
+		Msg:               msg,
+		Client:            client,
+		VClient:           vclient,
+		Send:              sync.Map{},
+		OperatorNamespace: operatorNamespace,
 	}
 }
 
-func (w *Watcher) ChannelCreate(obj interface{}) {
-	klog.V(5).Infoln("get new channel")
-	key, err := cache.MetaNamespaceKeyFunc(obj)
+func (w *Watcher) ChannelUpdate(old interface{}, new interface{}) {
+	klog.V(5).Infoln("update channel")
+	key, err := cache.MetaNamespaceKeyFunc(new)
 	if err != nil {
 		runtime.HandleError(err)
 		return
@@ -70,20 +76,24 @@ func (w *Watcher) ChannelCreate(obj interface{}) {
 		runtime.HandleError(err)
 		return
 	}
-	channel, ok := obj.(*v1beta1.Channel)
+	channel, ok := new.(*v1beta1.Channel)
 	if !ok {
 		klog.ErrorS(ErrWrongTypeChannel, "get wrong type of network", "obj", name)
 		return
 	}
-	if err := w.GetProfile(context.TODO(), channel); err != nil {
+	oldChannel, ok := old.(*v1beta1.Channel)
+	if !ok {
+		klog.ErrorS(ErrWrongTypeChannel, "get wrong type of network", "obj", name)
+		return
+	}
+	if reflect.DeepEqual(channel.Spec, oldChannel.Spec) && reflect.DeepEqual(channel.Status, oldChannel.Status) {
+		klog.V(5).Infof("channel %s updated but has same spec and status, update detail:%s, just skip", channel.GetName(), cmp.Diff(oldChannel, channel))
+		return
+	}
+	if err := w.HandleProfile(context.TODO(), w.OperatorNamespace, channel); err != nil {
 		runtime.HandleError(err)
 		return
 	}
-}
-
-func (w *Watcher) ChannelUpdate(oldObj interface{}, newObj interface{}) {
-	klog.V(5).Infoln("update channel")
-	w.ChannelCreate(newObj)
 }
 
 func (w *Watcher) ChannelDelete(obj interface{}) {
@@ -98,64 +108,225 @@ func (w *Watcher) ChannelDelete(obj interface{}) {
 		runtime.HandleError(err)
 		return
 	}
-	_, ok := obj.(*v1beta1.Channel)
+	channel, ok := obj.(*v1beta1.Channel)
 	if !ok {
 		klog.ErrorS(ErrWrongTypeChannel, "get wrong type of channel", "obj", name)
 		return
 	}
-	w.DeleteNames <- name
-	w.Send.Delete(name)
+	msg := Msg{
+		ChannelName: name,
+		NetworkName: channel.Spec.Network,
+		Type:        Delete,
+		Data:        nil,
+	}
+	w.sendMsg(msg)
 }
 
-func (w *Watcher) GetProfile(ctx context.Context, channel *v1beta1.Channel) (err error) {
-	channelName := channel.GetName()
-	if _, exist := w.Send.Load(channelName); exist {
-		klog.V(5).Infof("channel %s has send to listener", channelName)
-		return
-	}
+func (w *Watcher) HandleProfile(ctx context.Context, operatorNamespace string, channel *v1beta1.Channel) (err error) {
 	if len(channel.Spec.Peers) == 0 {
-		klog.V(5).Infof("skip channel:%s send because of no peers", channelName)
+		klog.V(5).Infof("skip channel:%s send because of no peers", channel.GetName())
 		return
 	}
-	sort.Slice(channel.Spec.Peers, func(i, j int) bool {
-		return channel.Spec.Peers[i].Name > channel.Spec.Peers[j].Name
-	})
 	cmName := channel.GetConnectionPorfile()
-	cmNs := channel.Spec.Peers[0].Namespace
-	cm, err := w.Client.CoreV1().ConfigMaps(cmNs).Get(ctx, cmName, metav1.GetOptions{})
+	cm, err := w.Client.CoreV1().ConfigMaps(operatorNamespace).Get(ctx, cmName, metav1.GetOptions{})
 	if err != nil {
 		return errors.Wrap(err, "cant get channel connection profile configmap")
 	}
-	data := cm.BinaryData["profile.json"]
+	fabProfile, err := w.parseDataFromConfigmap(cm)
+	if err != nil {
+		return err
+	}
+	w.SendProfile(fabProfile, channel.Spec.Network, channel.GetName(), channel.Status.Type)
+	return
+}
+
+func (w *Watcher) parseDataFromConfigmap(configmap *corev1.ConfigMap) (fabProfile *network.FabProfile, err error) {
+	channelName, err := getConfigMapOwnerChannel(configmap)
+	if err != nil {
+		return nil, err
+	}
+	data := configmap.BinaryData["profile.json"]
 	if data == nil {
-		return fmt.Errorf("no profile.json in configmap:%s in ns:%s", cmName, cmNs)
+		return nil, fmt.Errorf("no profile.json in configmap:%s in ns:%s", configmap.Name, configmap.Namespace)
 	}
 	profile := &Profile{}
 	if err := json.Unmarshal(data, profile); err != nil {
-		return errors.Wrap(err, fmt.Sprintf("configmap.BinaryData.'profile.json' json unmarshal error, configmap:%s in ns:%s", cmName, cmNs))
+		return nil, errors.Wrap(err, fmt.Sprintf("configmap.BinaryData.'profile.json' json unmarshal error, configmap:%s in ns:%s", configmap.Name, configmap.Namespace))
 	}
-	fabProfile := &network.FabProfile{}
+	fabProfile = &network.FabProfile{}
 	fabProfile.Channel = channelName
-	for key, value := range profile.Organizations {
-		fabProfile.Organization = key
-		for _, v := range value.Users {
+	// Always use the connection profile of the peer as the first in alphabetical
+	peers := make([]string, 0)
+	for peerName := range profile.Peers {
+		peers = append(peers, peerName)
+	}
+	if len(peers) == 0 {
+		return nil, fmt.Errorf("no peers find in comfigmap:%s in ns:%s for channel:%s", configmap.Name, configmap.Namespace, channelName)
+	}
+	sort.Strings(peers)
+	wantPeer := peers[0]
+	for orgName, value := range profile.Organizations {
+		if !slices.Contains(value.Peers, wantPeer) {
+			continue
+		}
+		fabProfile.Organization = orgName
+		users := make([]string, 0)
+		for userName := range value.Users {
+			users = append(users, userName)
+		}
+		if len(users) == 0 {
+			return nil, fmt.Errorf("has peer, but no user find for org:%s in comfigmap:%s in ns:%s for channel:%s", orgName, configmap.Name, configmap.Namespace, channelName)
+		}
+		sort.Strings(users)
+		for userName, v := range value.Users {
+			if userName != users[0] {
+				continue
+			}
 			fabProfile.User.Name = v.Name
 			fabProfile.User.Key.Pem = v.Key.Pem
 			fabProfile.User.Cert.Pem = v.Cert.Pem
-			break
 		}
-		break
 	}
-	for _, value := range profile.Peers {
+	for peerName, value := range profile.Peers {
+		if wantPeer != peerName {
+			continue
+		}
 		fabProfile.Enpoint.URL = value.URL
 		fabProfile.Enpoint.TLSCACerts.Pem = value.TLSCACerts.Pem
-		break
 	}
-	n := network.Network{}
-	n.FabProfile = fabProfile
-	n.ID = channel.Spec.Network
-	n.Platform = "bestchains"
-	w.Profile <- n
-	w.Send.Load(channelName)
-	return
+	return fabProfile, nil
+}
+
+func key(networkName, channelName string) string {
+	return networkName + "_" + channelName
+}
+
+func (w *Watcher) ProfileConfigMapCreate(obj interface{}) {
+	klog.V(5).Infoln("new configmap create")
+	key, err := cache.MetaNamespaceKeyFunc(obj)
+	if err != nil {
+		runtime.HandleError(err)
+		return
+	}
+	_, name, err := cache.SplitMetaNamespaceKey(key)
+	if err != nil {
+		runtime.HandleError(err)
+		return
+	}
+	cm, ok := obj.(*corev1.ConfigMap)
+	if !ok {
+		klog.ErrorS(ErrWrongTypeConfigmap, "get wrong type of configmap", "obj", name)
+		return
+	}
+	fabProfile, err := w.parseDataFromConfigmap(cm)
+	if err != nil {
+		klog.ErrorS(err, "cant parse data from configmap", "configmap", name)
+		return
+	}
+	channel, err := w.VClient.Ibp().Channels().Get(context.TODO(), fabProfile.Channel, metav1.GetOptions{})
+	if err != nil {
+		klog.ErrorS(err, "cant get channel", "configmap", name)
+		return
+	}
+	w.SendProfile(fabProfile, channel.Spec.Network, channel.GetName(), channel.Status.Type)
+}
+
+func (w *Watcher) ProfileConfigMapUpdate(old interface{}, new interface{}) {
+	klog.V(5).Infoln("update configmap")
+	key, err := cache.MetaNamespaceKeyFunc(new)
+	if err != nil {
+		runtime.HandleError(err)
+		return
+	}
+	_, name, err := cache.SplitMetaNamespaceKey(key)
+	if err != nil {
+		runtime.HandleError(err)
+		return
+	}
+	cm, ok := new.(*corev1.ConfigMap)
+	if !ok {
+		klog.ErrorS(ErrWrongTypeConfigmap, "get wrong type of configmap", "obj", name)
+		return
+	}
+	oldCm, ok := old.(*corev1.ConfigMap)
+	if !ok {
+		klog.ErrorS(ErrWrongTypeConfigmap, "get wrong type of configmap", "obj", name)
+		return
+	}
+	if reflect.DeepEqual(cm.BinaryData, oldCm.BinaryData) && reflect.DeepEqual(cm.OwnerReferences, oldCm.OwnerReferences) {
+		klog.V(5).Infof("configmap %s updated but has same BinaryData and ownerReferences, update detail:%s, just skip", cm.GetName(), cmp.Diff(oldCm, cm))
+		return
+	}
+	w.ProfileConfigMapCreate(new)
+}
+
+func getConfigMapOwnerChannel(cm *corev1.ConfigMap) (channelName string, err error) {
+	if len(cm.OwnerReferences) == 0 {
+		return "", fmt.Errorf("configmap:%s in ns:%s has no owerReference", cm.Name, cm.Namespace)
+	}
+	for _, owner := range cm.OwnerReferences {
+		if owner.Kind == "Channel" && owner.APIVersion == "ibp.com/v1beta1" {
+			return owner.Name, nil
+		}
+	}
+	return "", fmt.Errorf("configmap:%s in ns:%s has owerReference, but no one is channel", cm.Name, cm.Namespace)
+}
+
+func (w *Watcher) SendProfile(fabProfile *network.FabProfile, networkName, channelName string, channelStatus v1beta1.IBPCRStatusType) {
+	if networkName == "" {
+		klog.V(5).Infof("channel %s, no networkName, skip send", channelName)
+		return
+	}
+	if channelName == "" {
+		klog.V(5).Infof("network %s no channelName, skip send", networkName)
+		return
+	}
+	data := &network.Network{}
+	data.FabProfile = fabProfile
+	data.ID = networkName
+	data.Platform = "bestchains"
+	msg := Msg{
+		ChannelName: channelName,
+		NetworkName: networkName,
+		Data:        data,
+	}
+	switch channelStatus {
+	case v1beta1.ChannelArchived:
+		msg.Type = Deregister
+	default:
+		msg.Type = Register
+	}
+	w.sendMsg(msg)
+}
+
+func (w *Watcher) sendMsg(msg Msg) {
+	key := key(msg.NetworkName, msg.ChannelName)
+	if value, exist := w.Send.Load(key); exist {
+		oldMsg, ok := (value).(Msg)
+		if !ok {
+			klog.InfoS("cant get msg from sync.Map, skip send", "network", msg.NetworkName, "channel", msg.ChannelName)
+			return
+		}
+		if reflect.DeepEqual(msg, oldMsg) {
+			klog.InfoS("has send to listener, skip resend", "network", msg.NetworkName, "channel", msg.ChannelName)
+			return
+		}
+	}
+	w.Msg <- msg
+	w.Send.Store(key, msg)
+	if msg.Type == Delete {
+		go func() {
+			// When msg.Type is Delete, it means that the channel has been deleted in the cluster.
+			// We should also delete the data in sync.Map to prevent memory leaks.
+			// In order to filter out possible multiple deletion events, we will delay for 5 minutes before deleting.
+			time.Sleep(5 * time.Minute)
+			value, exist := w.Send.Load(key)
+			if exist {
+				msg, ok := (value).(Msg)
+				if ok && msg.Type == Delete {
+					w.Send.Delete(key)
+				}
+			}
+		}()
+	}
 }

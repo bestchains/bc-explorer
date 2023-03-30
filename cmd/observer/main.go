@@ -30,7 +30,8 @@ import (
 )
 
 var (
-	host = flag.String("host", "localhost:9999", "the host of listener")
+	host              = flag.String("host", "localhost:9999", "the host of listener")
+	operatorNamespace = flag.String("operator-namespace", "baas-system", "the ns of fabric-operator")
 )
 
 func main() {
@@ -55,7 +56,7 @@ func run() error {
 		cancel()
 	}()
 	restConfig := config.GetConfigOrDie()
-	if err := observer.Run(ctx, restConfig, *host); err != nil {
+	if err := observer.Run(ctx, restConfig, *host, *operatorNamespace); err != nil {
 		return err
 	}
 	return nil

@@ -7,15 +7,18 @@ require (
 	github.com/go-pg/pg/v10 v10.11.0
 	github.com/gofiber/fiber/v2 v2.42.0
 	github.com/golangci/golangci-lint v1.43.0
+	github.com/google/go-cmp v0.5.9
 	github.com/hyperledger/fabric-gateway v1.2.2
 	github.com/hyperledger/fabric-protos-go-apiv2 v0.2.0
 	github.com/pkg/errors v0.9.1
 	google.golang.org/grpc v1.53.0
 	google.golang.org/protobuf v1.28.1
+	k8s.io/api v0.22.5
 	k8s.io/apimachinery v0.22.5
 	k8s.io/apiserver v0.22.5
 	k8s.io/client-go v0.22.5
 	k8s.io/klog/v2 v2.90.1
+	k8s.io/utils v0.0.0-20211208161948-7d6a63dca704
 	sigs.k8s.io/controller-runtime v0.10.3
 )
 
@@ -99,7 +102,6 @@ require (
 	github.com/golangci/misspell v0.3.5 // indirect
 	github.com/golangci/revgrep v0.0.0-20210930125155-c22e5001d4f2 // indirect
 	github.com/golangci/unconvert v0.0.0-20180507085042-28b1c447d1f4 // indirect
-	github.com/google/go-cmp v0.5.9 // indirect
 	github.com/google/go-containerregistry v0.8.1-0.20220211173031-41f8d92709b7 // indirect
 	github.com/google/gofuzz v1.2.0 // indirect
 	github.com/google/uuid v1.3.0 // indirect
@@ -249,11 +251,9 @@ require (
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	honnef.co/go/tools v0.2.1 // indirect
-	k8s.io/api v0.22.5 // indirect
 	k8s.io/apiextensions-apiserver v0.22.5 // indirect
 	k8s.io/component-base v0.22.5 // indirect
 	k8s.io/kube-openapi v0.0.0-20220114203427-a0453230fd26 // indirect
-	k8s.io/utils v0.0.0-20211208161948-7d6a63dca704 // indirect
 	knative.dev/pkg v0.0.0-20220131144930-f4b57aef0006 // indirect
 	mellium.im/sasl v0.3.1 // indirect
 	mvdan.cc/gofumpt v0.1.1 // indirect

@@ -34,6 +34,8 @@ clean:
 .PHONY: verify
 verify:
 	@hack/verify-copyright.sh
+	@hack/verify-golangci-lint.sh
+	@hack/verify-shfmt.sh
 
 .PHONY: golanglint-fix
 golanglint-fix:
