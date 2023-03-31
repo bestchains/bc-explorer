@@ -26,15 +26,14 @@ jobs:
         id: short-sha
       - name: Build image
         run: make image
-      - name: If on pull request, stop push image
-        if: github.event_name == 'pull_request'
-        run: exit 0
       - name: Login to the dockerhub Registry
+        if: github.event_name == 'push'
         uses: docker/login-action@v2
         with:
           username: hyperledgerk8s
           password: ${{ secrets.DOCKER_TOKEN }}
       - name: retag and push
+        if: github.event_name == 'push'
         run: |
           image=$(docker images --format '{{.Repository}}:{{.Tag}}' | grep bc-explorer)
           docker tag ${image} hyperledgerk8s/bc-explorer:latest
