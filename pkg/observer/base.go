@@ -19,6 +19,7 @@ package observer
 import (
 	"context"
 	"fmt"
+	"os"
 	"strings"
 	"time"
 
@@ -36,7 +37,7 @@ import (
 	"k8s.io/klog/v2"
 )
 
-func Run(ctx context.Context, config *rest.Config, host, operatorNamespace string) (err error) {
+func Run(ctx context.Context, config *rest.Config, host, operatorNamespace, authMethod string) (err error) {
 	defer runtime.HandleCrash()
 	klog.V(5).Infof("observer start...")
 	vclient, err := versioned.NewForConfig(config)
@@ -87,9 +88,24 @@ func Run(ctx context.Context, config *rest.Config, host, operatorNamespace strin
 	})
 	go conConfigMapInformer.Run(ctx.Done())
 	klog.V(5).Infoln("observer init finish.")
-	pusher := NewPusher(host, msg)
+	pusher := NewPusher(host, getAuth(authMethod), msg)
 	pusher.Run(ctx)
 	return nil
+}
+
+func getAuth(method string) string {
+	klog.V(5).Infof("use auth method %s", method)
+	if method == "none" {
+		return ""
+	}
+	token, err := os.ReadFile("/var/run/secrets/kubernetes.io/serviceaccount/token")
+	if err != nil {
+		klog.ErrorS(err, "read token error")
+		return ""
+	}
+	auth := "Bearer " + string(token)
+	klog.V(5).Infof("use kubernetes auth:%s", auth)
+	return auth
 }
 
 type Msg struct {

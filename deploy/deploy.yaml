@@ -21,18 +21,82 @@ spec:
         - viewer
         args:
         - -v=5
-        - -dsn=postgres://username:password@postgresql.172.22.96.209.nip.io/bc-explorer?sslmode=disable
+        - -dsn=postgres://bestchains:Passw0rd!@bc-explorer-postgresql.baas-system:5432/bestchains?sslmode=disable
+        - -auth=oidc
         ports:
         - containerPort: 9998
+        env:
+        - name: POD_SA
+          valueFrom:
+            fieldRef:
+              fieldPath: spec.serviceAccountName
+        - name: OIDC_CA_FILE
+          value: "/etc/oidc/oidc-server/ca.pem"
+        - name: OIDC_CLIENT_ID
+          valueFrom:
+            secretKeyRef:
+              key: oidc.client-id
+              name: kube-oidc-proxy-config
+        - name: OIDC_ISSUER_URL
+          valueFrom:
+            secretKeyRef:
+              key: oidc.issuer-url
+              name: kube-oidc-proxy-config
+        - name: OIDC_USERNAME_CLAIM
+          valueFrom:
+            secretKeyRef:
+              key: oidc.username-claim
+              name: kube-oidc-proxy-config
+        - name: OIDC_GROUPS_CLAIM
+          valueFrom:
+            secretKeyRef:
+              key: oidc.group-claim
+              name: kube-oidc-proxy-config
+        volumeMounts:
+        - mountPath: /etc/oidc/oidc-server
+          name: oidc-server-ca
+          readOnly: true
       - name: listener
         image:  hyperledgerk8s/bc-explorer:v0.1.0
         command:
         - listener
         args:
         - -v=4
-        - -dsn=postgres://username:password@postgresql.172.22.96.209.nip.io/bc-explorer?sslmode=disable
+        - -dsn=postgres://bestchains:Passw0rd!@bc-explorer-postgresql.baas-system:5432/bestchains?sslmode=disable
+        - auth=oidc
         ports:
         - containerPort: 9999
+        env:
+          - name: POD_SA
+            valueFrom:
+              fieldRef:
+                fieldPath: spec.serviceAccountName
+          - name: OIDC_CA_FILE
+            value: "/etc/oidc/tls/crt.pem"
+          - name: OIDC_CLIENT_ID
+            valueFrom:
+              secretKeyRef:
+                key: oidc.client-id
+                name: kube-oidc-proxy-config
+          - name: OIDC_ISSUER_URL
+            valueFrom:
+              secretKeyRef:
+                key: oidc.issuer-url
+                name: kube-oidc-proxy-config
+          - name: OIDC_USERNAME_CLAIM
+            valueFrom:
+              secretKeyRef:
+                key: oidc.username-claim
+                name: kube-oidc-proxy-config
+          - name: OIDC_GROUPS_CLAIM
+            valueFrom:
+              secretKeyRef:
+                key: oidc.group-claim
+                name: kube-oidc-proxy-config
+        volumeMounts:
+          - mountPath: /etc/oidc/oidc-server
+            name: oidc-server-ca
+            readOnly: true
       - name: observer
         image: hyperledgerk8s/bc-explorer:v0.1.0
         command:
@@ -40,3 +104,12 @@ spec:
         args:
           - -v=5
           - -host=http://127.0.0.1:9999
+          - auth=oidc
+      volumes:
+        - name: oidc-server-ca
+          secret:
+            defaultMode: 420
+            items:
+              - key: ca.crt
+                path: ca.pem
+            secretName: oidc-server-root-secret

@@ -33,13 +33,15 @@ import (
 
 type Pusher struct {
 	Host string
+	Auth string
 	Msg  <-chan Msg
 }
 
-func NewPusher(host string, msg <-chan Msg) *Pusher {
+func NewPusher(host, auth string, msg <-chan Msg) *Pusher {
 	return &Pusher{
 		Host: strings.TrimSuffix(host, "/"),
 		Msg:  msg,
+		Auth: auth,
 	}
 }
 
@@ -79,7 +81,13 @@ func (p *Pusher) Register(key string, data *network.Network) (err error) {
 	url := p.Host + "/network/register"
 	jsonStr, _ := json.Marshal(data)
 	klog.V(5).InfoS(fmt.Sprintf("register url:%s post body:%s", url, string(jsonStr)), "key", key)
-	resp, err := http.Post(url, "application/json", bytes.NewBuffer(jsonStr))
+	req, err := http.NewRequest(http.MethodPost, url, bytes.NewBuffer(jsonStr))
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	p.AddAuth(req)
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return err
 	}
@@ -93,6 +101,7 @@ func (p *Pusher) Delete(name string) (err error) {
 	if err != nil {
 		return err
 	}
+	p.AddAuth(req)
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return err
@@ -103,7 +112,13 @@ func (p *Pusher) Delete(name string) (err error) {
 func (p *Pusher) DeRegister(name string) (err error) {
 	url := p.Host + fmt.Sprintf("/network/deregister/%s", name)
 	klog.V(5).InfoS(fmt.Sprintf("deregister url:%s", url), "key", name)
-	resp, err := http.Post(url, "application/json", nil)
+	req, err := http.NewRequest(http.MethodPost, url, nil)
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	p.AddAuth(req)
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return err
 	}
@@ -119,4 +134,11 @@ func (p *Pusher) getResp(key string, resp *http.Response) error {
 	bodyString := string(bodyBytes)
 	klog.V(5).InfoS(fmt.Sprintf("resp code:%d body:%s", resp.StatusCode, bodyString), "key", key)
 	return fmt.Errorf("code: [%d] %s, resp:%s", resp.StatusCode, http.StatusText(resp.StatusCode), bodyString)
+}
+
+func (p *Pusher) AddAuth(req *http.Request) {
+	if p.Auth != "" {
+		req.Header.Set("Authorization", p.Auth)
+		klog.V(5).Infof("with auth, header:%s", req.Header)
+	}
 }

@@ -139,10 +139,6 @@ func (l *listener) Register(n *network.Network) error {
 		n.ID = fmt.Sprintf("%s_%s", n.ID, n.FabProfile.Channel)
 	}
 
-	if _, ok := l.networks[n.ID]; ok {
-		return errNetworkAlreadyExists
-	}
-
 	var blkListener BlockEventListener
 	var err error
 
