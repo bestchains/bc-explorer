@@ -22,6 +22,7 @@ import (
 	"os"
 
 	"github.com/bestchains/bc-explorer/pkg/network"
+	"github.com/bestchains/bc-explorer/pkg/utils"
 
 	gwclient "github.com/hyperledger/fabric-gateway/pkg/client"
 
@@ -34,7 +35,7 @@ var (
 	profile  = flag.String("profile", "./network.json", "profile to connect with blockchain network")
 	contract = flag.String("contract", "samplecc", "contract name")
 	method   = flag.String("method", "PutValue", "contract method")
-	args     = new(sliceArgs)
+	args     = new(utils.SliceArgs)
 )
 
 func main() {

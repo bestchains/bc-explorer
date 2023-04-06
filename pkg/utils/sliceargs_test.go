@@ -14,17 +14,19 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package main
+package utils
 
-import "strings"
+import (
+	"testing"
 
-type sliceArgs []string
+	"github.com/stretchr/testify/assert"
+)
 
-func (s *sliceArgs) String() string {
-	return strings.Join(*s, ", ")
-}
+func TestSliceArgs(t *testing.T) {
+	args := new(SliceArgs)
+	assert.Equal(t, "", args.String())
 
-func (s *sliceArgs) Set(value string) error {
-	*s = append(*s, value)
-	return nil
+	args.Set("arg1")
+	args.Set("arg2")
+	assert.Equal(t, "arg1, arg2", args.String())
 }
