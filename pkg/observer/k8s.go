@@ -114,7 +114,7 @@ func (w *Watcher) ChannelDelete(obj interface{}) {
 		return
 	}
 	msg := Msg{
-		ChannelName: name,
+		ChannelID:   channel.GetChannelID(),
 		NetworkName: channel.Spec.Network,
 		Type:        Delete,
 		Data:        nil,
@@ -132,19 +132,16 @@ func (w *Watcher) HandleProfile(ctx context.Context, operatorNamespace string, c
 	if err != nil {
 		return errors.Wrap(err, "cant get channel connection profile configmap")
 	}
-	fabProfile, err := w.parseDataFromConfigmap(cm)
+
+	fabProfile, err := w.parseDataFromConfigmap(cm, channel)
 	if err != nil {
 		return err
 	}
-	w.SendProfile(fabProfile, channel.Spec.Network, channel.GetName(), channel.Status.Type)
+	w.SendProfile(fabProfile, channel.Spec.Network, channel.GetChannelID(), channel.Status.Type)
 	return
 }
 
-func (w *Watcher) parseDataFromConfigmap(configmap *corev1.ConfigMap) (fabProfile *network.FabProfile, err error) {
-	channelName, err := getConfigMapOwnerChannel(configmap)
-	if err != nil {
-		return nil, err
-	}
+func (w *Watcher) parseDataFromConfigmap(configmap *corev1.ConfigMap, channel *v1beta1.Channel) (fabProfile *network.FabProfile, err error) {
 	data := configmap.BinaryData["profile.json"]
 	if data == nil {
 		return nil, fmt.Errorf("no profile.json in configmap:%s in ns:%s", configmap.Name, configmap.Namespace)
@@ -154,14 +151,14 @@ func (w *Watcher) parseDataFromConfigmap(configmap *corev1.ConfigMap) (fabProfil
 		return nil, errors.Wrap(err, fmt.Sprintf("configmap.BinaryData.'profile.json' json unmarshal error, configmap:%s in ns:%s", configmap.Name, configmap.Namespace))
 	}
 	fabProfile = &network.FabProfile{}
-	fabProfile.Channel = channelName
+	fabProfile.Channel = channel.GetChannelID()
 	// Always use the connection profile of the peer as the first in alphabetical
 	peers := make([]string, 0)
 	for peerName := range profile.Peers {
 		peers = append(peers, peerName)
 	}
 	if len(peers) == 0 {
-		return nil, fmt.Errorf("no peers find in comfigmap:%s in ns:%s for channel:%s", configmap.Name, configmap.Namespace, channelName)
+		return nil, fmt.Errorf("no peers find in comfigmap:%s in ns:%s for channel:%s", configmap.Name, configmap.Namespace, channel.GetName())
 	}
 	sort.Strings(peers)
 	wantPeer := peers[0]
@@ -175,7 +172,7 @@ func (w *Watcher) parseDataFromConfigmap(configmap *corev1.ConfigMap) (fabProfil
 			users = append(users, userName)
 		}
 		if len(users) == 0 {
-			return nil, fmt.Errorf("has peer, but no user find for org:%s in comfigmap:%s in ns:%s for channel:%s", orgName, configmap.Name, configmap.Namespace, channelName)
+			return nil, fmt.Errorf("has peer, but no user find for org:%s in comfigmap:%s in ns:%s for channel:%s", orgName, configmap.Name, configmap.Namespace, channel.GetName())
 		}
 		sort.Strings(users)
 		for userName, v := range value.Users {
@@ -197,8 +194,8 @@ func (w *Watcher) parseDataFromConfigmap(configmap *corev1.ConfigMap) (fabProfil
 	return fabProfile, nil
 }
 
-func key(networkName, channelName string) string {
-	return networkName + "_" + channelName
+func key(networkName, channelID string) string {
+	return networkName + "_" + channelID
 }
 
 func (w *Watcher) ProfileConfigMapCreate(obj interface{}) {
@@ -218,17 +215,23 @@ func (w *Watcher) ProfileConfigMapCreate(obj interface{}) {
 		klog.ErrorS(ErrWrongTypeConfigmap, "get wrong type of configmap", "obj", name)
 		return
 	}
-	fabProfile, err := w.parseDataFromConfigmap(cm)
+
+	channelName, err := getConfigMapOwnerChannel(cm)
 	if err != nil {
-		klog.ErrorS(err, "cant parse data from configmap", "configmap", name)
+		klog.ErrorS(err, "cant get channel name", "configmap", name)
 		return
 	}
-	channel, err := w.VClient.Ibp().Channels().Get(context.TODO(), fabProfile.Channel, metav1.GetOptions{})
+	channel, err := w.VClient.Ibp().Channels().Get(context.TODO(), channelName, metav1.GetOptions{})
 	if err != nil {
 		klog.ErrorS(err, "cant get channel", "configmap", name)
 		return
 	}
-	w.SendProfile(fabProfile, channel.Spec.Network, channel.GetName(), channel.Status.Type)
+	fabProfile, err := w.parseDataFromConfigmap(cm, channel)
+	if err != nil {
+		klog.ErrorS(err, "cant parse data from configmap", "configmap", name)
+		return
+	}
+	w.SendProfile(fabProfile, channel.Spec.Network, channel.GetChannelID(), channel.Status.Type)
 }
 
 func (w *Watcher) ProfileConfigMapUpdate(old interface{}, new interface{}) {
@@ -272,13 +275,13 @@ func getConfigMapOwnerChannel(cm *corev1.ConfigMap) (channelName string, err err
 	return "", fmt.Errorf("configmap:%s in ns:%s has owerReference, but no one is channel", cm.Name, cm.Namespace)
 }
 
-func (w *Watcher) SendProfile(fabProfile *network.FabProfile, networkName, channelName string, channelStatus v1beta1.IBPCRStatusType) {
+func (w *Watcher) SendProfile(fabProfile *network.FabProfile, networkName, channelID string, channelStatus v1beta1.IBPCRStatusType) {
 	if networkName == "" {
-		klog.V(5).Infof("channel %s, no networkName, skip send", channelName)
+		klog.V(5).Infof("channel %s, no networkName, skip send", channelID)
 		return
 	}
-	if channelName == "" {
-		klog.V(5).Infof("network %s no channelName, skip send", networkName)
+	if channelID == "" {
+		klog.V(5).Infof("network %s no channelID, skip send", networkName)
 		return
 	}
 	data := &network.Network{}
@@ -286,7 +289,7 @@ func (w *Watcher) SendProfile(fabProfile *network.FabProfile, networkName, chann
 	data.ID = networkName
 	data.Platform = "bestchains"
 	msg := Msg{
-		ChannelName: channelName,
+		ChannelID:   channelID,
 		NetworkName: networkName,
 		Data:        data,
 	}
@@ -300,15 +303,15 @@ func (w *Watcher) SendProfile(fabProfile *network.FabProfile, networkName, chann
 }
 
 func (w *Watcher) sendMsg(msg Msg) {
-	key := key(msg.NetworkName, msg.ChannelName)
+	key := key(msg.NetworkName, msg.ChannelID)
 	if value, exist := w.Send.Load(key); exist {
 		oldMsg, ok := (value).(Msg)
 		if !ok {
-			klog.InfoS("cant get msg from sync.Map, skip send", "network", msg.NetworkName, "channel", msg.ChannelName)
+			klog.InfoS("cant get msg from sync.Map, skip send", "network", msg.NetworkName, "channel", msg.ChannelID)
 			return
 		}
 		if reflect.DeepEqual(msg, oldMsg) {
-			klog.InfoS("has send to listener, skip resend", "network", msg.NetworkName, "channel", msg.ChannelName)
+			klog.InfoS("has send to listener, skip resend", "network", msg.NetworkName, "channel", msg.ChannelID)
 			return
 		}
 	}
