@@ -251,8 +251,8 @@ github.com/beorn7/perks v0.0.0-20180321164747-3a771d992973/go.mod h1:Dwedo/Wpr24
 github.com/beorn7/perks v1.0.0/go.mod h1:KWe93zE9D1o94FZ5RNwFwVgaQK1VOXiVxmqh+CedLV8=
 github.com/beorn7/perks v1.0.1 h1:VlbKKnNfV8bJzeqoa4cOKqO6bYr3WgKZxO8Z16+hsOM=
 github.com/beorn7/perks v1.0.1/go.mod h1:G2ZrVWU2WbWT9wwq4/hrbKbnv/1ERSJQ0ibhJ6rlkpw=
-github.com/bestchains/fabric-operator v0.1.3-0.20230324052234-d879467a38d5 h1:pANE/UOoCxyddo9eKzQo/VEn18+2Nnnbm7I5/th37sI=
-github.com/bestchains/fabric-operator v0.1.3-0.20230324052234-d879467a38d5/go.mod h1:Nq26XGiNjg2gxWzfOtKkaKtnk6k4yGs5+jLCOfqatRY=
+github.com/bestchains/fabric-operator v0.1.3-0.20230404140140-4d4bef022ae9 h1:JUg0MkcXKQREDi84vpHRjdk3ulb14KPHK1htNkKcA1c=
+github.com/bestchains/fabric-operator v0.1.3-0.20230404140140-4d4bef022ae9/go.mod h1:Nq26XGiNjg2gxWzfOtKkaKtnk6k4yGs5+jLCOfqatRY=
 github.com/bgentry/speakeasy v0.1.0/go.mod h1:+zsyZBPWlz7T6j88CTgSN5bM796AkVf0kBD4zp0CCIs=
 github.com/bitly/go-simplejson v0.5.0/go.mod h1:cXHtHw4XUPsvGaxgjIAn8PhEWG9NfngEKAMDJEczWVA=
 github.com/bits-and-blooms/bitset v1.2.0/go.mod h1:gIdJ4wp64HaoK2YrL1Q5/N7Y16edYb8uY+O0FJTyyDA=

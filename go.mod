@@ -11,6 +11,7 @@ require (
 	github.com/hyperledger/fabric-gateway v1.2.2
 	github.com/hyperledger/fabric-protos-go-apiv2 v0.2.0
 	github.com/pkg/errors v0.9.1
+	github.com/stretchr/testify v1.8.1
 	google.golang.org/grpc v1.53.0
 	google.golang.org/protobuf v1.28.1
 	k8s.io/api v0.22.5
@@ -192,7 +193,6 @@ require (
 	github.com/spf13/viper v1.10.1 // indirect
 	github.com/ssgreg/nlreturn/v2 v2.2.1 // indirect
 	github.com/stretchr/objx v0.5.0 // indirect
-	github.com/stretchr/testify v1.8.1 // indirect
 	github.com/subosito/gotenv v1.2.0 // indirect
 	github.com/sylvia7788/contextcheck v1.0.4 // indirect
 	github.com/tdakkota/asciicheck v0.0.0-20200416200610-e657995f937b // indirect
@@ -266,7 +266,7 @@ require (
 )
 
 replace (
-	github.com/IBM-Blockchain/fabric-operator => github.com/bestchains/fabric-operator v0.1.3-0.20230324052234-d879467a38d5
+	github.com/IBM-Blockchain/fabric-operator => github.com/bestchains/fabric-operator v0.1.3-0.20230404140140-4d4bef022ae9
 	github.com/go-logr/logr => github.com/go-logr/logr v0.4.0
 	github.com/hyperledger/fabric-protos-go => github.com/Abirdcfly/fabric-protos-go v0.0.0-20230324110652-fee4e1b29726
 	k8s.io/klog/v2 => k8s.io/klog/v2 v2.9.0

@@ -31,6 +31,10 @@ binary:
 clean:
 	rm -rf _output
 
+.PHONY: test
+test:
+	@hack/run-unit-tests.sh
+
 .PHONY: verify
 verify:
 	@hack/verify-copyright.sh
