@@ -93,7 +93,7 @@ func Run(ctx context.Context, config *rest.Config, host, operatorNamespace strin
 }
 
 type Msg struct {
-	ChannelName string
+	ChannelID   string
 	NetworkName string
 	Type        MsgType
 	Data        *network.Network

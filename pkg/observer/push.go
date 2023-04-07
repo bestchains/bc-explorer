@@ -46,7 +46,7 @@ func NewPusher(host string, msg <-chan Msg) *Pusher {
 func (p *Pusher) Run(ctx context.Context) {
 	for {
 		data := <-p.Msg
-		key := key(data.NetworkName, data.ChannelName)
+		key := key(data.NetworkName, data.ChannelID)
 		for i := 0; i < 2; i++ {
 			// If the HTTP request fails, try again after 1 second.
 			time.Sleep(time.Duration(i) * time.Second)
