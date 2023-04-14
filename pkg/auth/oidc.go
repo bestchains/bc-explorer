@@ -19,12 +19,12 @@ package auth
 import (
 	"context"
 	"errors"
-	"fmt"
 	"net/http"
 	"os"
 
 	"github.com/gofiber/adaptor/v2"
 	"github.com/gofiber/fiber/v2"
+	"k8s.io/apiserver/pkg/authentication/authenticator"
 	"k8s.io/apiserver/pkg/authentication/request/bearertoken"
 	"k8s.io/apiserver/pkg/endpoints/request"
 	"k8s.io/apiserver/pkg/server/dynamiccertificates"
@@ -34,14 +34,13 @@ import (
 
 type OIDCAuthor struct {
 	*KubernetesAuthor
+	oidcAuthenticator authenticator.Request
 }
 
 func (o *OIDCAuthor) New(ctx context.Context) (err error) {
-	sarAuthorizer, err := getRequestAuthorizer()
-	if err != nil {
-		return fmt.Errorf("failed to create sar authorizer: %w", err)
+	if err := o.KubernetesAuthor.New(ctx); err != nil {
+		return err
 	}
-	o.requestAuthorizer = sarAuthorizer
 
 	fileName := os.Getenv("OIDC_CA_FILE")
 	if fileName == "" {
@@ -65,7 +64,8 @@ func (o *OIDCAuthor) New(ctx context.Context) (err error) {
 	if err != nil {
 		return err
 	}
-	o.requestAuthenticator = bearertoken.New(tokenAuthenticator)
+	o.oidcAuthenticator = bearertoken.New(tokenAuthenticator)
+
 	o.NetworkLister, o.ChannelLister, err = getListers(ctx)
 	return err
 }
@@ -73,7 +73,12 @@ func (o *OIDCAuthor) New(ctx context.Context) (err error) {
 func (o *OIDCAuthor) Authentication(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		klog.V(5).InfoS("try to get user")
-		res, ok, err := o.requestAuthenticator.AuthenticateRequest(req)
+		res, ok, err := o.oidcAuthenticator.AuthenticateRequest(req)
+		if err != nil || !ok {
+			klog.V(5).Infoln("oidc get user failed, try to get user from k8s", "err", err, "ok", ok)
+			// maybe just kubernetes token
+			res, ok, err = o.requestAuthenticator.AuthenticateRequest(req)
+		}
 		if err != nil {
 			klog.Errorf("Unable to authenticate the request due to an error: %v", err)
 			http.Error(w, "Unauthorized", http.StatusUnauthorized)

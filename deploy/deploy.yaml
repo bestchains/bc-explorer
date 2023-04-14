@@ -30,6 +30,10 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: spec.serviceAccountName
+        - name: POD_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
         - name: OIDC_CA_FILE
           value: "/etc/oidc/oidc-server/ca.pem"
         - name: OIDC_CLIENT_ID
@@ -61,9 +65,9 @@ spec:
         command:
         - listener
         args:
-        - -v=4
+        - -v=5
         - -dsn=postgres://bestchains:Passw0rd!@bc-explorer-postgresql.baas-system:5432/bestchains?sslmode=disable
-        - auth=oidc
+        - -auth=oidc
         ports:
         - containerPort: 9999
         env:
@@ -71,8 +75,12 @@ spec:
             valueFrom:
               fieldRef:
                 fieldPath: spec.serviceAccountName
+          - name: POD_NAMESPACE
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.namespace
           - name: OIDC_CA_FILE
-            value: "/etc/oidc/tls/crt.pem"
+            value: "/etc/oidc/oidc-server/ca.pem"
           - name: OIDC_CLIENT_ID
             valueFrom:
               secretKeyRef:
@@ -104,7 +112,7 @@ spec:
         args:
           - -v=5
           - -host=http://127.0.0.1:9999
-          - auth=oidc
+          - -auth=oidc
       volumes:
         - name: oidc-server-ca
           secret:

@@ -21,6 +21,7 @@ import (
 	"strings"
 
 	"github.com/gofiber/fiber/v2"
+	"k8s.io/klog/v2"
 )
 
 // New creates a new middleware handler
@@ -40,6 +41,7 @@ func New(ctx context.Context, config Config) fiber.Handler {
 		// If auth init fails, should panic as soon as possible.
 		panic(err)
 	}
+	klog.Infoln("auth init success", "authMethod", config.AuthMethod)
 	return a.Run()
 }
 
