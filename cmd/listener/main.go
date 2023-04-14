@@ -20,6 +20,7 @@ import (
 	"context"
 	"flag"
 
+	"github.com/bestchains/bc-explorer/pkg/auth"
 	"github.com/bestchains/bc-explorer/pkg/errorsq"
 	bclistener "github.com/bestchains/bc-explorer/pkg/listener"
 	"github.com/go-pg/pg/v10"
@@ -30,15 +31,14 @@ import (
 )
 
 var (
-	injector = flag.String("injector", "pg", "used to initialize injector")
-	dsn      = flag.String("dsn", "postgres://bestchains:Passw0rd!@127.0.0.1:5432/bc-explorer?sslmode=disable", "database connection string")
-	addr     = flag.String("addr", ":9999", "used to listen and serve http requests")
+	injector   = flag.String("injector", "pg", "used to initialize injector")
+	dsn        = flag.String("dsn", "postgres://bestchains:Passw0rd!@127.0.0.1:5432/bc-explorer?sslmode=disable", "database connection string")
+	addr       = flag.String("addr", ":9999", "used to listen and serve http requests")
+	authMethod = flag.String("auth", "none", "user authentication method, none or kubernetes")
 )
 
 func main() {
-	klog.InitFlags(nil)
 	flag.Parse()
-
 	if err := run(); err != nil {
 		klog.Error(err)
 	}
@@ -99,6 +99,9 @@ func run() error {
 	app.Use(cors.New(cors.ConfigDefault))
 	app.Use(logger.New(logger.Config{
 		Format: "[${ip}]:${port} ${status} - ${method} ${path}\n",
+	}))
+	app.Use(auth.New(pctx, auth.Config{
+		AuthMethod: *authMethod,
 	}))
 
 	// handlers

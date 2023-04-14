@@ -30,8 +30,9 @@ import (
 )
 
 var (
-	host              = flag.String("host", "localhost:9999", "the host of listener")
+	host              = flag.String("host", "http://localhost:9999", "the host of listener")
 	operatorNamespace = flag.String("operator-namespace", "baas-system", "the ns of fabric-operator")
+	authMethod        = flag.String("auth", "none", "user authentication method, none or kubernetes")
 )
 
 func main() {
@@ -56,7 +57,7 @@ func run() error {
 		cancel()
 	}()
 	restConfig := config.GetConfigOrDie()
-	if err := observer.Run(ctx, restConfig, *host, *operatorNamespace); err != nil {
+	if err := observer.Run(ctx, restConfig, *host, *operatorNamespace, *authMethod); err != nil {
 		return err
 	}
 	return nil
