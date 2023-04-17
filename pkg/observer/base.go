@@ -60,11 +60,6 @@ func Run(ctx context.Context, config *rest.Config, host, operatorNamespace, auth
 		DeleteFunc: watcher.ChannelDelete,
 	})
 	informerFactory.Start(ctx.Done())
-	if !cache.WaitForCacheSync(ctx.Done(), channelInformer.Informer().HasSynced) {
-		err := fmt.Errorf("waitForCacheSync failed")
-		klog.ErrorS(err, "cannot sync caches")
-		return err
-	}
 
 	conConfigMapInformer := coreInformers.NewConfigMapInformer(client, operatorNamespace, 12*time.Hour, cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc})
 	conConfigMapInformer.AddEventHandler(cache.FilteringResourceEventHandler{
@@ -87,6 +82,12 @@ func Run(ctx context.Context, config *rest.Config, host, operatorNamespace, auth
 		},
 	})
 	go conConfigMapInformer.Run(ctx.Done())
+
+	if !cache.WaitForNamedCacheSync("observer", ctx.Done(), channelInformer.Informer().HasSynced, conConfigMapInformer.HasSynced) {
+		err := fmt.Errorf("waitForCacheSync failed")
+		klog.ErrorS(err, "cannot sync caches")
+		return err
+	}
 	klog.V(5).Infoln("observer init finish.")
 	pusher := NewPusher(host, getAuth(authMethod), msg)
 	pusher.Run(ctx)

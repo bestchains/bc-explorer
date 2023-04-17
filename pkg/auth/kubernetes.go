@@ -63,22 +63,6 @@ const (
 	CommonPath     = "/networks/"
 )
 
-func getRequestAuthorizer() (sarAuthorizer authorizer.Authorizer, err error) {
-	restConfig := config.GetConfigOrDie()
-	kubeClient, err := kubernetes.NewForConfig(restConfig)
-	if err != nil {
-		return nil, err
-	}
-
-	authorizerConfig := authorizerfactory.DelegatingAuthorizerConfig{
-		SubjectAccessReviewClient: kubeClient.AuthorizationV1(),
-		AllowCacheTTL:             5 * time.Minute,
-		DenyCacheTTL:              30 * time.Second,
-		WebhookRetryBackoff:       options.DefaultAuthWebhookRetryBackoff(),
-	}
-	return authorizerConfig.New()
-}
-
 func (k *KubernetesAuthor) New(ctx context.Context) (err error) {
 	restConfig := config.GetConfigOrDie()
 	kubeClient, err := kubernetes.NewForConfig(restConfig)
@@ -98,11 +82,17 @@ func (k *KubernetesAuthor) New(ctx context.Context) (err error) {
 	}
 	k.requestAuthenticator = authenticatorReq
 
-	sarAuthorizer, err := getRequestAuthorizer()
+	authorizerConfig := authorizerfactory.DelegatingAuthorizerConfig{
+		SubjectAccessReviewClient: kubeClient.AuthorizationV1(),
+		AllowCacheTTL:             5 * time.Minute,
+		DenyCacheTTL:              30 * time.Second,
+		WebhookRetryBackoff:       options.DefaultAuthWebhookRetryBackoff(),
+	}
+	k.requestAuthorizer, err = authorizerConfig.New()
 	if err != nil {
 		return fmt.Errorf("failed to create sar authorizer: %w", err)
 	}
-	k.requestAuthorizer = sarAuthorizer
+
 	k.NetworkLister, k.ChannelLister, err = getListers(ctx)
 	return err
 }
@@ -115,8 +105,9 @@ func (k *KubernetesAuthor) Authorizer(next http.Handler) http.Handler {
 			http.Error(w, "user not in context", http.StatusBadRequest)
 			return
 		}
-		if u.GetName() == os.Getenv("POD_SA") {
+		if u.GetName() == fmt.Sprintf("system:serviceaccount:%s:%s", os.Getenv("POD_NAMESPACE"), os.Getenv("POD_SA")) {
 			klog.V(5).InfoS("local observer, skip")
+			next.ServeHTTP(w, req)
 			return
 		}
 
@@ -226,8 +217,6 @@ func (k *KubernetesAuthor) GetReqName(rawURL string) (network, channelName strin
 		}
 		networkNameChannelID := t[0]
 		networkName, channelID, found := strings.Cut(networkNameChannelID, "_")
-		// TODO Should we check the existence of networks and channels?
-		// If they don't exist, should we return 403 or 404, or let the viewer to decide?
 		if !found {
 			return "", "", fmt.Errorf("wrong uri:%s", u.Path)
 		}
@@ -265,13 +254,14 @@ func getListers(ctx context.Context) (networkLister v1beta1.NetworkLister, chann
 
 	informerFactory := externalversions.NewSharedInformerFactory(vclient, 0)
 	channelInformer := informerFactory.Ibp().V1beta1().Channels()
+	channelLister = channelInformer.Lister()
 	networkInformer := informerFactory.Ibp().V1beta1().Networks()
+	networkLister = networkInformer.Lister()
 	informerFactory.Start(ctx.Done())
-	if !cache.WaitForCacheSync(ctx.Done(), channelInformer.Informer().HasSynced, networkInformer.Informer().HasSynced) {
+	if !cache.WaitForNamedCacheSync("auth", ctx.Done(), channelInformer.Informer().HasSynced, networkInformer.Informer().HasSynced) {
 		err = fmt.Errorf("waitForCacheSync failed")
 		klog.ErrorS(err, "cannot sync caches")
 		return
 	}
-	return networkInformer.Lister(), channelInformer.Lister(), nil
-
+	return
 }
