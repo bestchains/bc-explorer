@@ -22,4 +22,8 @@ type Config struct {
 	//
 	// Required. Default: None
 	AuthMethod string
+	// SkipAuthorize defines whether skip authorization.
+	//
+	// Optional. Default: false
+	SkipAuthorize bool
 }

@@ -32,10 +32,10 @@ func New(ctx context.Context, config Config) fiber.Handler {
 		a = &NoneAuthor{}
 	case "oidc":
 		a = &OIDCAuthor{
-			KubernetesAuthor: &KubernetesAuthor{},
+			KubernetesAuthor: &KubernetesAuthor{SkipAuthorize: config.SkipAuthorize},
 		}
 	default:
-		a = &KubernetesAuthor{}
+		a = &KubernetesAuthor{SkipAuthorize: config.SkipAuthorize}
 	}
 	if err := a.New(ctx); err != nil {
 		// If auth init fails, should panic as soon as possible.
