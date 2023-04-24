@@ -29,7 +29,7 @@ func (_ NoneAuthor) New(_ context.Context) error {
 }
 
 func (_ NoneAuthor) Run() fiber.Handler {
-	return func(_ *fiber.Ctx) error {
-		return nil
+	return func(ctx *fiber.Ctx) error {
+		return ctx.Next()
 	}
 }
