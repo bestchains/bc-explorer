@@ -65,8 +65,6 @@ func (o *OIDCAuthor) New(ctx context.Context) (err error) {
 		return err
 	}
 	o.oidcAuthenticator = bearertoken.New(tokenAuthenticator)
-
-	o.NetworkLister, o.ChannelLister, err = getListers(ctx)
 	return err
 }
 

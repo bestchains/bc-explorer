@@ -49,6 +49,7 @@ type KubernetesAuthor struct {
 	requestAuthorizer    authorizer.Authorizer
 	NetworkLister        v1beta1.NetworkLister
 	ChannelLister        v1beta1.ChannelLister
+	SkipAuthorize        bool
 }
 
 var (
@@ -82,23 +83,28 @@ func (k *KubernetesAuthor) New(ctx context.Context) (err error) {
 	}
 	k.requestAuthenticator = authenticatorReq
 
-	authorizerConfig := authorizerfactory.DelegatingAuthorizerConfig{
-		SubjectAccessReviewClient: kubeClient.AuthorizationV1(),
-		AllowCacheTTL:             5 * time.Minute,
-		DenyCacheTTL:              30 * time.Second,
-		WebhookRetryBackoff:       options.DefaultAuthWebhookRetryBackoff(),
+	if !k.SkipAuthorize {
+		authorizerConfig := authorizerfactory.DelegatingAuthorizerConfig{
+			SubjectAccessReviewClient: kubeClient.AuthorizationV1(),
+			AllowCacheTTL:             5 * time.Minute,
+			DenyCacheTTL:              30 * time.Second,
+			WebhookRetryBackoff:       options.DefaultAuthWebhookRetryBackoff(),
+		}
+		k.requestAuthorizer, err = authorizerConfig.New()
+		if err != nil {
+			return fmt.Errorf("failed to create sar authorizer: %w", err)
+		}
+		k.NetworkLister, k.ChannelLister, err = getListers(ctx)
 	}
-	k.requestAuthorizer, err = authorizerConfig.New()
-	if err != nil {
-		return fmt.Errorf("failed to create sar authorizer: %w", err)
-	}
-
-	k.NetworkLister, k.ChannelLister, err = getListers(ctx)
 	return err
 }
 
 func (k *KubernetesAuthor) Authorizer(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		if k.SkipAuthorize {
+			next.ServeHTTP(w, req)
+			return
+		}
 		klog.V(5).InfoS("try to get permission")
 		u, ok := request.UserFrom(req.Context())
 		if !ok {

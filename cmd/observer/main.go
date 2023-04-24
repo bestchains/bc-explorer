@@ -32,7 +32,7 @@ import (
 var (
 	host              = flag.String("host", "http://localhost:9999", "the host of listener")
 	operatorNamespace = flag.String("operator-namespace", "baas-system", "the ns of fabric-operator")
-	authMethod        = flag.String("auth", "none", "user authentication method, none or kubernetes")
+	authMethod        = flag.String("auth", "none", "user authentication method, none, oidc or kubernetes")
 )
 
 func main() {
