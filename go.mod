@@ -1,6 +1,6 @@
 module github.com/bestchains/bc-explorer
 
-go 1.18
+go 1.20
 
 require (
 	github.com/IBM-Blockchain/fabric-operator v0.0.0-00010101000000-000000000000
