@@ -19,8 +19,7 @@ jobs:
       - name: Set up Go command
         uses: actions/setup-go@v4
         with:
-          go-version: 'stable'
-          check-latest: true
+          go-version-file: 'go.mod'
       - name: verify all
         run: make verify
 
