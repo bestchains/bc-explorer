@@ -41,7 +41,7 @@ var _ pg.QueryHook = (*Block)(nil)
 func (*Block) BeforeQuery(ctx context.Context, event *pg.QueryEvent) (context.Context, error) {
 	query, err := event.FormattedQuery()
 	if err != nil {
-		return ctx, nil
+		return ctx, err
 	}
 	klog.V(5).Infof("[format query] %s\n", string(query))
 	return ctx, nil
