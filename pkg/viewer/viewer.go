@@ -168,7 +168,7 @@ func (h *handler) CountTransactionsCreatedByOrg(ctx *fiber.Ctx) error {
 		ctx.Status(http.StatusInternalServerError)
 		if pg.ErrNoRows == err {
 			ctx.Status(http.StatusNotFound)
-			msg = fmt.Sprintf("no transactions found")
+			msg = "no transactions found"
 		}
 		return ctx.JSON(map[string]string{"msg": msg})
 	}
