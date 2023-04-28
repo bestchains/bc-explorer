@@ -1,28 +1,29 @@
-<h1>
-bc-explorer: a comprehensive blockchain explorer 
-</h1>
+# Bestchains Explorer
+
+[![codecov](https://codecov.io/gh/bestchains/bc-explorer/branch/main/graph/badge.svg?token=6W2QTWHQY1)](https://codecov.io/gh/bestchains/bc-explorer)
+
 bc-explorer is a block explorer for **bestchains** which has three components :
 
 - `viewer`: view formatted blockchain network data with `http apis`,including:
-    - `networks`
-    - `blocks`
-    - `transactions`
+  - `networks`
+  - `blocks`
+  - `transactions`
 - `listener`: listen on blockchain network events and inject formatted data to database(`postgresql`).Also support:
-    - `register` a new blockchain network
-    - `deregister` a blockchain network
+  - `register` a new blockchain network
+  - `deregister` a blockchain network
 - `observer`: observe network status in `bestchains` platform and automatically register/deregister networks into `listener`
 - `client`: fabric test client to help generate contract calls
-
 
 > NOTE: For API authorization & authentication,we will use [kube-rbac-proxy](https://github.com/brancz/kube-rbac-proxy).
 
 ![Architecture](./doc/images/arch.png)
 
+## Usage
+
 ### Prerequsities
 
-- [Go1.18]()
+- [Go1.20](https://go.dev/doc/install)
 - [Postgresql](https://www.postgresql.org/download/)
-
 
 ### Build Image
 
@@ -34,15 +35,16 @@ WHAT=bc-explorer GOOS=linux GOARCH=amd64 make image
 ### Quick start
 
 #### Listener
+
 1. build bc-explorer listener
 
-```
+```shell
 go build -o bin/listener cmd/listener/main.go
 ```
 
 2. verify `listener`
 
-```
+```shell
 Usage of ./bin/listener:
   -add_dir_header
         If true, adds the file directory to the header of the log messages
@@ -80,20 +82,21 @@ Usage of ./bin/listener:
 
 3. start bc-explorer listener
 
-```
+```shell
 ./bin/listener -addr localhost:9999 -injector pg -dsn postgres://username:password@127.0.0.1:5432/bc-explorer?sslmode=disable
 ```
 
 #### Viewer
+
 1. build bc-explorer viewer
 
-```
+```shell
 go build -o bin/viewer cmd/viewer/main.go
 ```
 
 2. verify `viewer`
 
-```
+```shell
 Usage of ./bin/viewer:
   -add_dir_header
         If true, adds the file directory to the header of the log messages
@@ -131,7 +134,7 @@ Usage of ./bin/viewer:
 
 3. start bc-explorer viewer
 
-```bash
+```shell
 # test the service by logging, which will print the request and return a false data
 ./bin/viewer -v=5 -db=log 
 
@@ -140,13 +143,16 @@ Usage of ./bin/viewer:
 ```
 
 #### Client
+
 1. build bc-explorer client
-```
+
+```shell
 go build -o bin/client cmd/client/*
 ```
 
 2. verify `client`
-```
+
+```shell
 Usage of ./bin/client:
   -args value
         a list of arguments for contract call
@@ -162,30 +168,35 @@ Usage of ./bin/client:
 
 For a contract [`samplecc`](https://github.com/bestchains/fabric-builder-k8s/blob/main/samples/go-contract/main.go), we use `client` to call `PutValue`
 
-```
+```shell
 ./bin/client -profile ./test/sample_fabric_network.json -contract samplecc -method PutValue -args platform -args bestchains
 ```
 
-After this contract call, a transaction will be injected to `bc-explorer` with network id `blkexp_blkexp6`. A pair of `Key-Value`(`{"platform":"bestchains"}`) will be stored into blockchain statedb. 
+After this contract call, a transaction will be injected to `bc-explorer` with network id `blkexp_blkexp6`. A pair of `Key-Value`(`{"platform":"bestchains"}`) will be stored into blockchain statedb.
 
 Contract call can be verified by  `GetValue`
-```
+
+```shell
 ./bin/client -profile ./test/sample_fabric_network.json -contract samplecc -method GetValue -args platform
 ```
+
 Output:
-```
+
+```shell
 I0324 10:24:01.523211   21170 main.go:71] Result: bestchains
 ```
+
 #### observer
+
 1. build bc-explorer observer
 
-```
+```shell
 go build -o bin/observer cmd/observer/main.go
 ```
 
 2. verify `observer`
 
-```bash
+```shell
 Usage of ./bin/observer:
   -add_dir_header
         If true, adds the file directory to the header of the log messages
@@ -221,7 +232,7 @@ Usage of ./bin/observer:
 
 3. start bc-explorer observer
 
-```bash
+```shell
 # test the service by logging
 ./bin/observer -v=5
 
@@ -230,6 +241,7 @@ Usage of ./bin/observer:
 ```
 
 ## Development
+
 ### Models
 
 [See the documentation](./doc/models.md)
