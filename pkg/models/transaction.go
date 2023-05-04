@@ -33,6 +33,23 @@ const (
 	EndorserTransaction TxType = "EndorserTransaction"
 )
 
+type Read struct {
+	Key     string `json:"key,omitempty"`
+	Version string `json:"version,omitempty"`
+}
+
+type Write struct {
+	Key      string `json:"key,omitempty"`
+	Value    string `json:"value,omitempty"`
+	IsDelete bool   `json:"isDelete,omitempty"`
+}
+
+type FabRWSet struct {
+	Namespace string  `json:"namespace,omitempty"`
+	Reads     []Read  `json:"reads,omitempty"`
+	Writes    []Write `json:"writes,omitempty"`
+}
+
 type Transaction struct {
 	ID          string `pg:"id,pk" json:"id"`
 	Network     string `pg:"network" json:"network"`
