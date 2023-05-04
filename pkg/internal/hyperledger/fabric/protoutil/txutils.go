@@ -24,6 +24,7 @@ package protoutil
 
 import (
 	"encoding/json"
+	"strings"
 
 	"github.com/bestchains/bc-explorer/pkg/internal/hyperledger/fabric/rwsetutil"
 	"github.com/bestchains/bc-explorer/pkg/models"
@@ -119,7 +120,34 @@ func GetTransactionFromEnvelope(txEnvelopBytes []byte) (*models.Transaction, err
 		if err != nil {
 			return nil, err
 		}
-		raw, err := json.Marshal(txRWSet)
+
+		fabRWSets := make([]models.FabRWSet, len(txRWSet.NsRwSets))
+		for index, rwset := range txRWSet.NsRwSets {
+			fabRWSet := models.FabRWSet{
+				Namespace: rwset.NameSpace,
+			}
+			reads := make([]models.Read, 0)
+			writes := make([]models.Write, 0)
+			for _, read := range rwset.KvRwSet.Reads {
+				reads = append(reads, models.Read{
+					Key:     strings.Replace(read.GetKey(), "\u0000", "", -1),
+					Version: read.GetVersion().String(),
+				})
+			}
+			for _, write := range rwset.KvRwSet.Writes {
+				writes = append(writes, models.Write{
+					Key:      strings.Replace(write.GetKey(), "\u0000", "", -1),
+					Value:    string(write.GetValue()),
+					IsDelete: write.IsDelete,
+				})
+			}
+			fabRWSet.Reads = reads
+			fabRWSet.Writes = writes
+
+			fabRWSets[index] = fabRWSet
+		}
+
+		raw, err := json.Marshal(fabRWSets)
 		if err != nil {
 			return nil, err
 		}
