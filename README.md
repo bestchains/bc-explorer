@@ -14,7 +14,11 @@ bc-explorer is a block explorer for **bestchains** which has three components :
 - `observer`: observe network status in `bestchains` platform and automatically register/deregister networks into `listener`
 - `client`: fabric test client to help generate contract calls
 
-> NOTE: For API authorization & authentication,we will use [kube-rbac-proxy](https://github.com/brancz/kube-rbac-proxy).
+> NOTE: For API authorization & authentication,we allow tree ways
+>
+> - `none`: no authorization & authentication
+> - `oidc`: oidc authorization & authentication
+> - `kubernetes`: kubernetes authorization & authentication
 
 ![Architecture](./doc/images/arch.png)
 
@@ -47,37 +51,41 @@ go build -o bin/listener cmd/listener/main.go
 ```shell
 Usage of ./bin/listener:
   -add_dir_header
-        If true, adds the file directory to the header of the log messages
+     If true, adds the file directory to the header of the log messages
   -addr string
-        used to listen and serve http requests (default ":9999")
+     used to listen and serve http requests (default ":9999")
   -alsologtostderr
-        log to standard error as well as files (no effect when -logtostderr=true)
+     log to standard error as well as files
+  -auth string
+     user authentication method, none, oidc or kubernetes (default "none")
   -dsn string
-        database connection string (default "postgres://bestchains:Passw0rd!@127.0.0.1:5432/bc-explorer?sslmode=disable")
+     database connection string (default "postgres://bestchains:Passw0rd!@127.0.0.1:5432/bc-explorer?sslmode=disable")
   -injector string
-        used to initialize injector (default "pg")
+     used to initialize injector (default "pg")
+  -kubeconfig string
+     Paths to a kubeconfig. Only required if out-of-cluster.
   -log_backtrace_at value
-        when logging hits line file:N, emit a stack trace
+     when logging hits line file:N, emit a stack trace
   -log_dir string
-        If non-empty, write log files in this directory (no effect when -logtostderr=true)
+     If non-empty, write log files in this directory
   -log_file string
-        If non-empty, use this log file (no effect when -logtostderr=true)
+     If non-empty, use this log file
   -log_file_max_size uint
-        Defines the maximum size a log file can grow to (no effect when -logtostderr=true). Unit is megabytes. If the value is 0, the maximum file size is unlimited. (default 1800)
+     Defines the maximum size a log file can grow to. Unit is megabytes. If the value is 0, the maximum file size is unlimited. (default 1800)
   -logtostderr
-        log to standard error instead of files (default true)
+     log to standard error instead of files (default true)
   -one_output
-        If true, only write logs to their native severity level (vs also writing to each lower severity level; no effect when -logtostderr=true)
+     If true, only write logs to their native severity level (vs also writing to each lower severity level)
   -skip_headers
-        If true, avoid header prefixes in the log messages
+     If true, avoid header prefixes in the log messages
   -skip_log_headers
-        If true, avoid headers when opening log files (no effect when -logtostderr=true)
+     If true, avoid headers when opening log files
   -stderrthreshold value
-        logs at or above this threshold go to stderr when writing to files and stderr (no effect when -logtostderr=true or -alsologtostderr=false) (default 2)
+     logs at or above this threshold go to stderr (default 2)
   -v value
-        number for the log level verbosity
+     number for the log level verbosity
   -vmodule value
-        comma-separated list of pattern=N settings for file-filtered logging
+     comma-separated list of pattern=N settings for file-filtered logging
 ```
 
 3. start bc-explorer listener
@@ -99,37 +107,41 @@ go build -o bin/viewer cmd/viewer/main.go
 ```shell
 Usage of ./bin/viewer:
   -add_dir_header
-        If true, adds the file directory to the header of the log messages
+     If true, adds the file directory to the header of the log messages
   -addr string
-        used to listen and serve http requests (default ":9998")
+     used to listen and serve http requests (default ":9998")
   -alsologtostderr
-        log to standard error as well as files (no effect when -logtostderr=true)
+     log to standard error as well as files
+  -auth string
+     user authentication method, none, oidc or kubernetes (default "none")
   -db string
-        which database to use, default is pg(postgresql) (default "pg")
+     which database to use, default is pg(postgresql) (default "pg")
   -dsn string
-        database connection string (default "postgres://bestchains:Passw0rd!@127.0.0.1:5432/bc-explorer?sslmode=disable")
+     database connection string (default "postgres://bestchains:Passw0rd!@127.0.0.1:5432/bc-explorer?sslmode=disable")
+  -kubeconfig string
+     Paths to a kubeconfig. Only required if out-of-cluster.
   -log_backtrace_at value
-        when logging hits line file:N, emit a stack trace
+     when logging hits line file:N, emit a stack trace
   -log_dir string
-        If non-empty, write log files in this directory (no effect when -logtostderr=true)
+     If non-empty, write log files in this directory
   -log_file string
-        If non-empty, use this log file (no effect when -logtostderr=true)
+     If non-empty, use this log file
   -log_file_max_size uint
-        Defines the maximum size a log file can grow to (no effect when -logtostderr=true). Unit is megabytes. If the value is 0, the maximum file size is unlimited. (default 1800)
+     Defines the maximum size a log file can grow to. Unit is megabytes. If the value is 0, the maximum file size is unlimited. (default 1800)
   -logtostderr
-        log to standard error instead of files (default true)
+     log to standard error instead of files (default true)
   -one_output
-        If true, only write logs to their native severity level (vs also writing to each lower severity level; no effect when -logtostderr=true)
+     If true, only write logs to their native severity level (vs also writing to each lower severity level)
   -skip_headers
-        If true, avoid header prefixes in the log messages
+     If true, avoid header prefixes in the log messages
   -skip_log_headers
-        If true, avoid headers when opening log files (no effect when -logtostderr=true)
+     If true, avoid headers when opening log files
   -stderrthreshold value
-        logs at or above this threshold go to stderr when writing to files and stderr (no effect when -logtostderr=true or -alsologtostderr=false) (default 2)
+     logs at or above this threshold go to stderr (default 2)
   -v value
-        number for the log level verbosity
+     number for the log level verbosity
   -vmodule value
-        comma-separated list of pattern=N settings for file-filtered logging
+     comma-separated list of pattern=N settings for file-filtered logging
 ```
 
 3. start bc-explorer viewer
@@ -199,35 +211,39 @@ go build -o bin/observer cmd/observer/main.go
 ```shell
 Usage of ./bin/observer:
   -add_dir_header
-        If true, adds the file directory to the header of the log messages
+     If true, adds the file directory to the header of the log messages
   -alsologtostderr
-        log to standard error as well as files
+     log to standard error as well as files
+  -auth string
+     user authentication method, none, oidc or kubernetes (default "none")
   -host string
-        the host of listener (default "localhost:9999")
+     the host of listener (default "http://localhost:9999")
   -kubeconfig string
-        Paths to a kubeconfig. Only required if out-of-cluster.
+     Paths to a kubeconfig. Only required if out-of-cluster.
   -log_backtrace_at value
-        when logging hits line file:N, emit a stack trace
+     when logging hits line file:N, emit a stack trace
   -log_dir string
-        If non-empty, write log files in this directory
+     If non-empty, write log files in this directory
   -log_file string
-        If non-empty, use this log file
+     If non-empty, use this log file
   -log_file_max_size uint
-        Defines the maximum size a log file can grow to. Unit is megabytes. If the value is 0, the maximum file size is unlimited. (default 1800)
+     Defines the maximum size a log file can grow to. Unit is megabytes. If the value is 0, the maximum file size is unlimited. (default 1800)
   -logtostderr
-        log to standard error instead of files (default true)
+     log to standard error instead of files (default true)
   -one_output
-        If true, only write logs to their native severity level (vs also writing to each lower severity level)
+     If true, only write logs to their native severity level (vs also writing to each lower severity level)
+  -operator-namespace string
+     the ns of fabric-operator (default "baas-system")
   -skip_headers
-        If true, avoid header prefixes in the log messages
+     If true, avoid header prefixes in the log messages
   -skip_log_headers
-        If true, avoid headers when opening log files
+     If true, avoid headers when opening log files
   -stderrthreshold value
-        logs at or above this threshold go to stderr (default 2)
+     logs at or above this threshold go to stderr (default 2)
   -v value
-        number for the log level verbosity
+     number for the log level verbosity
   -vmodule value
-        comma-separated list of pattern=N settings for file-filtered logging
+     comma-separated list of pattern=N settings for file-filtered logging
 ```
 
 3. start bc-explorer observer
