@@ -1,5 +1,7 @@
-ARG ARCH
 FROM golang:1.20.2
+ARG ARCH=amd64
+ARG OS=linux
+
 WORKDIR /go/src/github.com/bestchains/bc-explorer
 COPY . .
 RUN make binary WHAT=viewer GOARCH=${ARCH} GOOS=linux
@@ -7,7 +9,10 @@ RUN make binary WHAT=listener GOARCH=${ARCH} GOOS=linux
 RUN make binary WHAT=observer GOARCH=${ARCH} GOOS=linux
 
 FROM alpine:3.16
-COPY --from=0 /go/src/github.com/bestchains/bc-explorer/_output/bin/linux/${ARCH}/viewer /bin/viewer
-COPY --from=0 /go/src/github.com/bestchains/bc-explorer/_output/bin/linux/${ARCH}/listener /bin/listener
-COPY --from=0 /go/src/github.com/bestchains/bc-explorer/_output/bin/linux/${ARCH}/observer /bin/observer
+ARG ARCH=amd64
+ARG OS=linux
+
+COPY --from=0 /go/src/github.com/bestchains/bc-explorer/_output/bin/${OS}/${ARCH}/viewer /bin/viewer
+COPY --from=0 /go/src/github.com/bestchains/bc-explorer/_output/bin/${OS}/${ARCH}/listener /bin/listener
+COPY --from=0 /go/src/github.com/bestchains/bc-explorer/_output/bin/${OS}/${ARCH}/observer /bin/observer
 WORKDIR /bin

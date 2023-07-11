@@ -36,6 +36,8 @@ function docker::build() {
 		docker buildx build --progress=plain --output=type=$output_type \
 			--platform "${BUILD_PLATFORMS}" \
 			--build-arg ="${target}" \
+			--build-arg ARCH="${ARCH}" \
+			--build-arg OS="${OS}" \
 			--tag "${image_name}" \
 			--file "${ROOT_PATH}/build/dockerfile.${target}" \
 			"${ROOT_PATH}"
