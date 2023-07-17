@@ -57,4 +57,4 @@ golanglint-fix:
 #   make image
 .PHONY: images
 image:
-	@REGISTRY=$(REGISTRY) OUTPUT_TYPE=$(OUTPUT_TYPE) BUILD_PLATFORMS=$(GOOS)/$(GOARCH) hack/build-image.sh $(filter ${DOCKER_TARGETS}, ${WHAT})
+	@REGISTRY=$(REGISTRY) OUTPUT_TYPE=$(OUTPUT_TYPE) BUILD_PLATFORMS=$(GOOS)/$(GOARCH) OS=$(GOOS) ARCH=$(GOARCH) hack/build-image.sh $(filter ${DOCKER_TARGETS}, ${WHAT})
